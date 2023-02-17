@@ -154,7 +154,9 @@ class Error(Exception):
 
     def __repr__(self):
         """String representation of the Error class."""
-        return "<{}.{} {}>".format(type(self).__module__, type(self).__name__, self.args)
+        return "<{}.{} {}>".format(
+            type(self).__module__, type(self).__name__, self.args
+        )
 
     @property
     def name(self):
@@ -245,7 +247,9 @@ class Snap(object):
 
     def __repr__(self):
         """A representation of the snap."""
-        return "<{}.{}: {}>".format(self.__module__, self.__class__.__name__, self.__dict__)
+        return "<{}.{}: {}>".format(
+            self.__module__, self.__class__.__name__, self.__dict__
+        )
 
     def __str__(self):
         """A human-readable representation of the snap."""
@@ -284,7 +288,6 @@ class Snap(object):
         command: List[str],
         services: Optional[List[str]] = None,
     ) -> CompletedProcess:
-
         if services:
             # an attempt to keep the command constrained to the snap instance's services
             services = ["{}.{}".format(self._name, service) for service in services]
@@ -294,9 +297,13 @@ class Snap(object):
         _cmd = ["snap", *command, *services]
 
         try:
-            return subprocess.run(_cmd, universal_newlines=True, check=True, capture_output=True)
+            return subprocess.run(
+                _cmd, universal_newlines=True, check=True, capture_output=True
+            )
         except CalledProcessError as e:
-            raise SnapError("Could not {} for snap [{}]: {}".format(_cmd, self._name, e.stderr))
+            raise SnapError(
+                "Could not {} for snap [{}]: {}".format(_cmd, self._name, e.stderr)
+            )
 
     def get(self, key) -> str:
         """Gets a snap configuration value.
@@ -324,7 +331,9 @@ class Snap(object):
         """
         return self._snap("unset", [key])
 
-    def start(self, services: Optional[List[str]] = None, enable: Optional[bool] = False) -> None:
+    def start(
+        self, services: Optional[List[str]] = None, enable: Optional[bool] = False
+    ) -> None:
         """Starts a snap's services.
 
         Args:
@@ -334,7 +343,9 @@ class Snap(object):
         args = ["start", "--enable"] if enable else ["start"]
         self._snap_daemons(args, services)
 
-    def stop(self, services: Optional[List[str]] = None, disable: Optional[bool] = False) -> None:
+    def stop(
+        self, services: Optional[List[str]] = None, disable: Optional[bool] = False
+    ) -> None:
         """Stops a snap's services.
 
         Args:
@@ -344,7 +355,9 @@ class Snap(object):
         args = ["stop", "--disable"] if disable else ["stop"]
         self._snap_daemons(args, services)
 
-    def logs(self, services: Optional[List[str]] = None, num_lines: Optional[int] = 10) -> str:
+    def logs(
+        self, services: Optional[List[str]] = None, num_lines: Optional[int] = 10
+    ) -> str:
         """Shows a snap services' logs.
 
         Args:
@@ -442,7 +455,9 @@ class Snap(object):
         Raises:
           SnapError if an error is encountered
         """
-        self._confinement = "classic" if classic or self._confinement == "classic" else ""
+        self._confinement = (
+            "classic" if classic or self._confinement == "classic" else ""
+        )
 
         if state not in (SnapState.Present, SnapState.Latest):
             # We are attempting to remove this snap.
@@ -547,7 +562,9 @@ class _UnixSocketConnection(http.client.HTTPConnection):
     def connect(self):
         """Override connect to use Unix socket (instead of TCP socket)."""
         if not hasattr(socket, "AF_UNIX"):
-            raise NotImplementedError("Unix sockets not supported on {}".format(sys.platform))
+            raise NotImplementedError(
+                "Unix sockets not supported on {}".format(sys.platform)
+            )
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect(self.socket_path)
         if self.timeout is not None:
@@ -865,7 +882,9 @@ def _wrap_snap_operations(
             if state is SnapState.Absent:
                 snap.ensure(state=SnapState.Absent)
             else:
-                snap.ensure(state=state, classic=classic, channel=channel, cohort=cohort)
+                snap.ensure(
+                    state=state, classic=classic, channel=channel, cohort=cohort
+                )
             snaps["success"].append(snap)
         except SnapError as e:
             logger.warning("Failed to {} snap {}: {}!".format(op, s, e.message))
@@ -885,7 +904,10 @@ def _wrap_snap_operations(
 
 
 def install_local(
-    self, filename: str, classic: Optional[bool] = False, dangerous: Optional[bool] = False
+    self,
+    filename: str,
+    classic: Optional[bool] = False,
+    dangerous: Optional[bool] = False,
 ) -> Snap:
     """Perform a snap operation.
 
@@ -926,7 +948,9 @@ def _system_set(config_item: str, value: str) -> None:
     try:
         subprocess.check_call(_cmd, universal_newlines=True)
     except CalledProcessError:
-        raise SnapError("Failed setting system config '{}' to '{}'".format(config_item, value))
+        raise SnapError(
+            "Failed setting system config '{}' to '{}'".format(config_item, value)
+        )
 
 
 def hold_refresh(days: int = 90) -> bool:

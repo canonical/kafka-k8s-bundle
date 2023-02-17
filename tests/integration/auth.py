@@ -42,7 +42,9 @@ class KafkaAuth:
         ]
         if self.charm.tls.enabled:
             command += [f"--zk-tls-config-file={SNAP_CONFIG_PATH}server.properties"]
-        acls = KafkaSnap.run_bin_command(bin_keyword="acls", bin_args=command, opts=self.opts)
+        acls = KafkaSnap.run_bin_command(
+            bin_keyword="acls", bin_args=command, opts=self.opts
+        )
 
         return acls
 
@@ -157,7 +159,9 @@ class KafkaAuth:
         ]
         if self.charm.tls.enabled:
             command += [f"--zk-tls-config-file={SNAP_CONFIG_PATH}server.properties"]
-        KafkaSnap.run_bin_command(bin_keyword="configs", bin_args=command, opts=self.opts)
+        KafkaSnap.run_bin_command(
+            bin_keyword="configs", bin_args=command, opts=self.opts
+        )
 
     def delete_user(self, username: str) -> None:
         """Deletes user credentials from ZooKeeper.
@@ -177,7 +181,9 @@ class KafkaAuth:
         ]
         if self.charm.tls.enabled:
             command += [f"--zk-tls-config-file={SNAP_CONFIG_PATH}server.properties"]
-        KafkaSnap.run_bin_command(bin_keyword="configs", bin_args=command, opts=self.opts)
+        KafkaSnap.run_bin_command(
+            bin_keyword="configs", bin_args=command, opts=self.opts
+        )
 
     def add_acl(
         self, username: str, operation: str, resource_type: str, resource_name: str
@@ -262,13 +268,20 @@ class KafkaAuth:
             `subprocess.CalledProcessError`: if the error returned a non-zero exit code
         """
         # getting subset of all cluster ACLs for only the provided user
-        current_user_acls = {acl for acl in self.current_acls if acl.username == username}
+        current_user_acls = {
+            acl for acl in self.current_acls if acl.username == username
+        }
 
         for acl in current_user_acls:
             self.remove_acl(**asdict(acl))
 
     def update_user_acls(
-        self, username: str, topic: str, extra_user_roles: str, group: Optional[str], **_
+        self,
+        username: str,
+        topic: str,
+        extra_user_roles: str,
+        group: Optional[str],
+        **_,
     ) -> None:
         """Compares data passed from the client relation, and updating cluster ACLs to match.
 
@@ -289,14 +302,20 @@ class KafkaAuth:
             `subprocess.CalledProcessError`: if the error returned a non-zero exit code
         """
         if "producer" in extra_user_roles:
-            self.new_user_acls.update(self._generate_producer_acls(topic=topic, username=username))
+            self.new_user_acls.update(
+                self._generate_producer_acls(topic=topic, username=username)
+            )
         if "consumer" in extra_user_roles:
             self.new_user_acls.update(
-                self._generate_consumer_acls(topic=topic, username=username, group=group)
+                self._generate_consumer_acls(
+                    topic=topic, username=username, group=group
+                )
             )
 
         # getting subset of all cluster ACLs for only the provided user
-        current_user_acls = {acl for acl in self.current_acls if acl.username == username}
+        current_user_acls = {
+            acl for acl in self.current_acls if acl.username == username
+        }
 
         acls_to_add = self.new_user_acls - current_user_acls
         for acl in acls_to_add:

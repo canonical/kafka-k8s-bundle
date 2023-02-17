@@ -301,7 +301,12 @@ PROVIDER_JSON_SCHEMA = {
             "items": {
                 "$id": "#/properties/certificates/items",
                 "type": "object",
-                "required": ["certificate_signing_request", "certificate", "ca", "chain"],
+                "required": [
+                    "certificate_signing_request",
+                    "certificate",
+                    "ca",
+                    "chain",
+                ],
                 "properties": {
                     "certificate_signing_request": {
                         "$id": "#/properties/certificates/items/certificate_signing_request",
@@ -311,7 +316,10 @@ PROVIDER_JSON_SCHEMA = {
                         "$id": "#/properties/certificates/items/certificate",
                         "type": "string",
                     },
-                    "ca": {"$id": "#/properties/certificates/items/ca", "type": "string"},
+                    "ca": {
+                        "$id": "#/properties/certificates/items/ca",
+                        "type": "string",
+                    },
                     "chain": {
                         "$id": "#/properties/certificates/items/chain",
                         "type": "array",
@@ -412,7 +420,9 @@ class CertificateExpiredEvent(EventBase):
 class CertificateCreationRequestEvent(EventBase):
     """Charm Event triggered when a TLS certificate is required."""
 
-    def __init__(self, handle: Handle, certificate_signing_request: str, relation_id: int):
+    def __init__(
+        self, handle: Handle, certificate_signing_request: str, relation_id: int
+    ):
         super().__init__(handle)
         self.certificate_signing_request = certificate_signing_request
         self.relation_id = relation_id
@@ -524,7 +534,9 @@ def generate_ca(
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.utcnow())
         .not_valid_after(datetime.utcnow() + timedelta(days=validity))
-        .add_extension(x509.SubjectKeyIdentifier(digest=subject_identifier), critical=False)
+        .add_extension(
+            x509.SubjectKeyIdentifier(digest=subject_identifier), critical=False
+        )
         .add_extension(
             x509.AuthorityKeyIdentifier(
                 key_identifier=key_identifier,
@@ -615,7 +627,9 @@ def generate_pfx_package(
         cert=certificate_object,
         key=private_key_object,  # type: ignore[arg-type]
         cas=None,
-        encryption_algorithm=serialization.BestAvailableEncryption(package_password.encode()),
+        encryption_algorithm=serialization.BestAvailableEncryption(
+            package_password.encode()
+        ),
     )
     return pfx_bytes
 
@@ -679,23 +693,32 @@ def generate_csr(
     Returns:
         bytes: CSR
     """
-    signing_key = serialization.load_pem_private_key(private_key, password=private_key_password)
+    signing_key = serialization.load_pem_private_key(
+        private_key, password=private_key_password
+    )
     subject_name = [x509.NameAttribute(x509.NameOID.COMMON_NAME, subject)]
     if add_unique_id_to_subject_name:
         unique_identifier = uuid.uuid4()
         subject_name.append(
-            x509.NameAttribute(x509.NameOID.X500_UNIQUE_IDENTIFIER, str(unique_identifier))
+            x509.NameAttribute(
+                x509.NameOID.X500_UNIQUE_IDENTIFIER, str(unique_identifier)
+            )
         )
     if organization:
-        subject_name.append(x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, organization))
+        subject_name.append(
+            x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, organization)
+        )
     if email_address:
-        subject_name.append(x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, email_address))
+        subject_name.append(
+            x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, email_address)
+        )
     if country_name:
         subject_name.append(x509.NameAttribute(x509.NameOID.COUNTRY_NAME, country_name))
     csr = x509.CertificateSigningRequestBuilder(subject_name=x509.Name(subject_name))
     if sans:
         csr = csr.add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(san) for san in sans]), critical=False
+            x509.SubjectAlternativeName([x509.DNSName(san) for san in sans]),
+            critical=False,
         )
     if additional_critical_extensions:
         for extension in additional_critical_extensions:
@@ -807,7 +830,8 @@ class TLSCertificatesProvidesV1(Object):
                 certificates.remove(certificate_dict)
             if (
                 certificate_signing_request
-                and certificate_dict["certificate_signing_request"] == certificate_signing_request
+                and certificate_dict["certificate_signing_request"]
+                == certificate_signing_request
             ):
                 certificates.remove(certificate_dict)
         relation.data[self.model.app]["certificates"] = json.dumps(certificates)
@@ -878,7 +902,9 @@ class TLSCertificatesProvidesV1(Object):
         if not certificates_relation:
             raise RuntimeError(f"Relation {self.relationship_name} does not exist")
         for certificate_relation in certificates_relation:
-            self._remove_certificate(certificate=certificate, relation_id=certificate_relation.id)
+            self._remove_certificate(
+                certificate=certificate, relation_id=certificate_relation.id
+            )
 
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handler triggered on relation changed event.
@@ -896,7 +922,9 @@ class TLSCertificatesProvidesV1(Object):
             None
         """
         requirer_relation_data = _load_relation_data(event.relation.data[event.unit])
-        provider_relation_data = _load_relation_data(event.relation.data[self.charm.app])
+        provider_relation_data = _load_relation_data(
+            event.relation.data[self.charm.app]
+        )
         if not self._relation_data_is_valid(requirer_relation_data):
             logger.warning(
                 f"Relation data did not pass JSON Schema validation: {requirer_relation_data}"
@@ -937,18 +965,28 @@ class TLSCertificatesProvidesV1(Object):
         )
         if not certificates_relation:
             raise RuntimeError(f"Relation {self.relationship_name} does not exist")
-        provider_relation_data = _load_relation_data(certificates_relation.data[self.charm.app])
+        provider_relation_data = _load_relation_data(
+            certificates_relation.data[self.charm.app]
+        )
         list_of_csrs: List[str] = []
         for unit in certificates_relation.units:
-            requirer_relation_data = _load_relation_data(certificates_relation.data[unit])
-            requirer_csrs = requirer_relation_data.get("certificate_signing_requests", [])
-            list_of_csrs.extend(csr["certificate_signing_request"] for csr in requirer_csrs)
+            requirer_relation_data = _load_relation_data(
+                certificates_relation.data[unit]
+            )
+            requirer_csrs = requirer_relation_data.get(
+                "certificate_signing_requests", []
+            )
+            list_of_csrs.extend(
+                csr["certificate_signing_request"] for csr in requirer_csrs
+            )
         provider_certificates = provider_relation_data.get("certificates", [])
         for certificate in provider_certificates:
             if certificate["certificate_signing_request"] not in list_of_csrs:
                 self.on.certificate_revocation_request.emit(
                     certificate=certificate["certificate"],
-                    certificate_signing_request=certificate["certificate_signing_request"],
+                    certificate_signing_request=certificate[
+                        "certificate_signing_request"
+                    ],
                     ca=certificate["ca"],
                     chain=certificate["chain"],
                 )
@@ -999,7 +1037,9 @@ class TLSCertificatesRequiresV1(Object):
         if not relation:
             raise RuntimeError(f"Relation {self.relationship_name} does not exist")
         if not relation.app:
-            raise RuntimeError(f"Remote app for relation {self.relationship_name} does not exist")
+            raise RuntimeError(
+                f"Remote app for relation {self.relationship_name} does not exist"
+            )
         provider_relation_data = _load_relation_data(relation.data[relation.app])
         return provider_relation_data.get("certificates", [])
 
@@ -1024,7 +1064,9 @@ class TLSCertificatesRequiresV1(Object):
             return
         requirer_csrs = copy.deepcopy(self._requirer_csrs)
         requirer_csrs.append(new_csr_dict)
-        relation.data[self.model.unit]["certificate_signing_requests"] = json.dumps(requirer_csrs)
+        relation.data[self.model.unit]["certificate_signing_requests"] = json.dumps(
+            requirer_csrs
+        )
 
     def _remove_requirer_csr(self, csr: str) -> None:
         """Removes CSR from relation data.
@@ -1047,7 +1089,9 @@ class TLSCertificatesRequiresV1(Object):
             logger.info("CSR not in relation data - Doing nothing")
             return
         requirer_csrs.remove(csr_dict)
-        relation.data[self.model.unit]["certificate_signing_requests"] = json.dumps(requirer_csrs)
+        relation.data[self.model.unit]["certificate_signing_requests"] = json.dumps(
+            requirer_csrs
+        )
 
     def request_certificate_creation(self, certificate_signing_request: bytes) -> None:
         """Request TLS certificate to provider charm.
@@ -1069,7 +1113,9 @@ class TLSCertificatesRequiresV1(Object):
         self._add_requirer_csr(certificate_signing_request.decode().strip())
         logger.info("Certificate request sent to provider")
 
-    def request_certificate_revocation(self, certificate_signing_request: bytes) -> None:
+    def request_certificate_revocation(
+        self, certificate_signing_request: bytes
+    ) -> None:
         """Removes CSR from relation data.
 
         The provider of this relation is then expected to remove certificates associated to this
@@ -1086,7 +1132,9 @@ class TLSCertificatesRequiresV1(Object):
         logger.info("Certificate revocation sent to provider")
 
     def request_certificate_renewal(
-        self, old_certificate_signing_request: bytes, new_certificate_signing_request: bytes
+        self,
+        old_certificate_signing_request: bytes,
+        new_certificate_signing_request: bytes,
     ) -> None:
         """Renews certificate.
 
@@ -1156,7 +1204,9 @@ class TLSCertificatesRequiresV1(Object):
         for certificate in self._provider_certificates:
             if certificate["certificate_signing_request"] in requirer_csrs:
                 self.on.certificate_available.emit(
-                    certificate_signing_request=certificate["certificate_signing_request"],
+                    certificate_signing_request=certificate[
+                        "certificate_signing_request"
+                    ],
                     certificate=certificate["certificate"],
                     ca=certificate["ca"],
                     chain=certificate["chain"],
@@ -1192,7 +1242,9 @@ class TLSCertificatesRequiresV1(Object):
         for certificate_dict in self._provider_certificates:
             certificate = certificate_dict["certificate"]
             try:
-                certificate_object = x509.load_pem_x509_certificate(data=certificate.encode())
+                certificate_object = x509.load_pem_x509_certificate(
+                    data=certificate.encode()
+                )
             except ValueError:
                 logger.warning("Could not load certificate.")
                 continue
@@ -1202,8 +1254,11 @@ class TLSCertificatesRequiresV1(Object):
                 self.on.certificate_expired.emit(certificate=certificate)
                 self.request_certificate_revocation(certificate.encode())
                 continue
-            if time_difference.total_seconds() < (self.expiry_notification_time * 60 * 60):
+            if time_difference.total_seconds() < (
+                self.expiry_notification_time * 60 * 60
+            ):
                 logger.warning("Certificate almost expired")
                 self.on.certificate_expiring.emit(
-                    certificate=certificate, expiry=certificate_object.not_valid_after.isoformat()
+                    certificate=certificate,
+                    expiry=certificate_object.not_valid_after.isoformat(),
                 )
