@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Set, Tuple
 import yaml
 from charms.kafka.v0.kafka_snap import SNAP_CONFIG_PATH
 
-from tests.integration.auth import Acl, KafkaAuth
+from .auth import Acl, KafkaAuth
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,9 @@ def load_super_users(model_full_name: str, unit_name: str) -> List[str]:
     return []
 
 
-def check_user(model_full_name: str, username: str, zookeeper_uri: str, unit_name: str) -> None:
+def check_user(
+    model_full_name: str, username: str, zookeeper_uri: str, unit_name: str
+) -> None:
     if "k8s" in unit_name:
         command = f"JUJU_MODEL={model_full_name} juju ssh --container kafka {unit_name} 'KAFKA_OPTS=-Djava.security.auth.login.config=/data/kafka/config/kafka-jaas.cfg ./opt/kafka/bin/kafka-configs.sh --zookeeper {zookeeper_uri} --describe --entity-type users --entity-name {username} --zk-tls-config-file=/data/kafka/config/server.properties'"
     else:
@@ -86,7 +88,9 @@ def show_unit(unit_name: str, model_full_name: str) -> Any:
     return yaml.safe_load(result)
 
 
-def get_zookeeper_connection(unit_name: str, model_full_name: str) -> Tuple[List[str], str]:
+def get_zookeeper_connection(
+    unit_name: str, model_full_name: str
+) -> Tuple[List[str], str]:
     result = show_unit(unit_name=unit_name, model_full_name=model_full_name)
 
     relations_info = result[unit_name]["relation-info"]

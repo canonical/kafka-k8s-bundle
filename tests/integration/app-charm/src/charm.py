@@ -51,11 +51,19 @@ class ApplicationCharm(CharmBase):
         self.framework.observe(self.on[REL_NAME].relation_broken, self._log)
 
         self.framework.observe(getattr(self.on, "make_admin_action"), self._make_admin)
-        self.framework.observe(getattr(self.on, "remove_admin_action"), self._remove_admin)
-        self.framework.observe(getattr(self.on, "change_topic_action"), self._change_topic)
-        self.framework.observe(getattr(self.on, "produce_consume_action"), self._produce_consume)
+        self.framework.observe(
+            getattr(self.on, "remove_admin_action"), self._remove_admin
+        )
+        self.framework.observe(
+            getattr(self.on, "change_topic_action"), self._change_topic
+        )
+        self.framework.observe(
+            getattr(self.on, "produce_consume_action"), self._produce_consume
+        )
 
-        self.framework.observe(self.on["certificates"].relation_joined, self._tls_relation_joined)
+        self.framework.observe(
+            self.on["certificates"].relation_joined, self._tls_relation_joined
+        )
         self.framework.observe(
             self.certificates.on.certificate_available, self._on_certificate_available
         )
@@ -86,7 +94,9 @@ class ApplicationCharm(CharmBase):
             event.fail("No client relation")
             return
 
-        self.client_relation.data[self.app].update({"extra-user-roles": "admin,consumer,producer"})
+        self.client_relation.data[self.app].update(
+            {"extra-user-roles": "admin,consumer,producer"}
+        )
 
     def _remove_admin(self, event: ActionEvent) -> None:
         if not self.client_relation:
@@ -207,7 +217,8 @@ class ApplicationCharm(CharmBase):
             return
 
         self.write_file(
-            content=self.relation.data[self.app].get("private-key", ""), path="/tmp/server.key"
+            content=self.relation.data[self.app].get("private-key", ""),
+            path="/tmp/server.key",
         )
         self.write_file(content=event.certificate, path="/tmp/server.pem")
         self.write_file(content=event.ca, path="/tmp/ca.pem")

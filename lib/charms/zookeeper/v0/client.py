@@ -152,7 +152,9 @@ class ZooKeeperManager:
                     if response.get("Mode") == "leader":
                         leader = host
                         break
-            except KazooTimeoutError:  # in the case of having a dead unit in relation data
+            except (
+                KazooTimeoutError
+            ):  # in the case of having a dead unit in relation data
                 logger.debug(f"TIMEOUT - {host}")
                 continue
 
@@ -222,7 +224,9 @@ class ZooKeeperManager:
             MemberNotReadyError: if any members are not yet broadcasting
         """
         if self.members_syncing:
-            raise MembersSyncingError("Unable to add members - some members are syncing")
+            raise MembersSyncingError(
+                "Unable to add members - some members are syncing"
+            )
 
         for member in members:
             host = member.split("=")[1].split(":")[0]
@@ -249,7 +253,10 @@ class ZooKeeperManager:
                 password=self.password,
             ) as zk:
                 zk.client.reconfig(
-                    joining=member, leaving=None, new_members=None, from_config=self.config_version
+                    joining=member,
+                    leaving=None,
+                    new_members=None,
+                    from_config=self.config_version,
                 )
 
     def remove_members(self, members: Iterable[str]):
@@ -259,7 +266,9 @@ class ZooKeeperManager:
             MembersSyncingError: if any members are busy syncing data
         """
         if self.members_syncing:
-            raise MembersSyncingError("Unable to remove members - some members are syncing")
+            raise MembersSyncingError(
+                "Unable to remove members - some members are syncing"
+            )
 
         for member in members:
             member_id = re.findall(r"server.([1-9]+)", member)[0]
@@ -351,7 +360,11 @@ class ZooKeeperClient:
         self.client = KazooClient(
             hosts=f"{host}:{client_port}",
             timeout=1.0,
-            sasl_options={"mechanism": "DIGEST-MD5", "username": username, "password": password},
+            sasl_options={
+                "mechanism": "DIGEST-MD5",
+                "username": username,
+                "password": password,
+            },
         )
         self.client.start()
 
@@ -442,7 +455,9 @@ class ZooKeeperClient:
         result = set()
         for child in children:
             if path + child != "/zookeeper":
-                result.update(self.get_all_znode_children(path.rstrip("/") + "/" + child))
+                result.update(
+                    self.get_all_znode_children(path.rstrip("/") + "/" + child)
+                )
         if path != "/":
             result.add(path)
 
