@@ -1,5 +1,10 @@
 # Kafka K8s Bundle
 
+[![Bundle update available](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/on_bundle_update_available.yaml/badge.svg)](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/on_bundle_update_available.yaml)
+[![Integration tests](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/ci.yaml/badge.svg)](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/ci.yaml)
+[![Release to latest/edge](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/release.yaml)
+[![Charmhub](https://charmhub.io/kafka-k8s-bundle/badge.svg)](https://charmhub.io/kafka-k8s-bundle)
+
 This repository contains the k8s charm bundles for Kafka.
 
 ## Usage
@@ -22,7 +27,8 @@ juju bootstrap microk8s
 juju add-model kafka
 juju switch kafka
 ```
-###Deploy the Bundle
+
+### Deploy the Bundle
 ```bash
 juju deploy kafka-k8s-bundle --channel=edge
 ```

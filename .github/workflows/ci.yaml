@@ -16,7 +16,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          bootstrap-options: "--agent-version 2.9.38"
+          bootstrap-options: "--agent-version 2.9.42"
       - name: Run k8s integration tests
         run: |
-          tox -e integration-k8s -- --bundle "releases/latest/k8s/kafka-k8s/bundle.yaml"
+          tox -e integration-k8s -- --bundle "releases/latest/kafka-k8s/bundle.yaml"
