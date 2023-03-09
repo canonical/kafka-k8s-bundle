@@ -29,9 +29,5 @@ jobs:
             Update bundles with new revisions from Charmhub.
           labels: |
             automated pr
-          assignees: team-reviewers, marcoppenheimer, deusebio
-          reviewers: team-reviewers, marcoppenheimer, deusebio
-          team-reviewers: |
-            owners
-            maintainers
+          reviewers: marcoppenheimer, deusebio
           draft: false
