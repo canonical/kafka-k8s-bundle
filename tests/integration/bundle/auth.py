@@ -6,8 +6,8 @@
 
 import logging
 import re
-from dataclasses import asdict, dataclass
-from typing import List, Optional, Set
+from dataclasses import dataclass
+from typing import List, Set
 
 logger = logging.getLogger(__name__)
 
@@ -67,5 +67,3 @@ class KafkaAuth:
                 )
 
         return current_acls
-
-

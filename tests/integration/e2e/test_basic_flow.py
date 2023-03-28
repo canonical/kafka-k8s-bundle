@@ -12,6 +12,7 @@ from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
     get_random_topic,
+    kubectl_delete,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,10 +83,17 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app):
 
     await asyncio.sleep(100)
 
+    # logger.info("Scale down consumer")
+    # await ops_test.model.applications[consumer].scale(1)
+    # await ops_test.model.block_until(lambda: len(ops_test.model.applications[consumer].units) == 1)
     logger.info("Scale down consumer")
-    await ops_test.model.applications[consumer].destroy_units(f"{consumer}/2")
-    await ops_test.model.applications[consumer].destroy_units(f"{consumer}/1")
-    await ops_test.model.block_until(lambda: len(ops_test.model.applications[consumer].units) == 1)
+    res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[2])
+    logger.info(f"Res: {res}")
+    res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[1])
+    logger.info(f"Res: {res}")
+    await ops_test.model.block_until(
+        lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
+    )
     await ops_test.model.wait_for_idle(apps=[consumer], status="active", timeout=1000)
 
     logger.info("End scale down")
@@ -112,7 +120,7 @@ async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
 
     logger.info(f"Credentials: {credentials}")
 
-    uris = credentials[DATABASE_CHARM_NAME]["uris"]
+    uris = credentials["mongodb"]["uris"]
 
     check_produced_and_consumed_messages(uris, TOPIC)
 

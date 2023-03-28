@@ -7,8 +7,10 @@ import random
 import string
 from typing import Dict
 
+import ops
 from juju.unit import Unit
 from pymongo import MongoClient
+from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger()
 
@@ -74,3 +76,48 @@ async def fetch_action_get_credentials(unit: Unit) -> Dict:
 def get_random_topic() -> str:
     """Return a random topic name."""
     return f"topic-{''.join(random.choices(string.ascii_lowercase, k=4))}"
+
+
+async def scale_application(
+    ops_test: OpsTest, application_name: str, desired_count: int, wait: bool = True
+) -> None:
+    """Scale a given application to the desired unit count.
+
+    Args:
+        ops_test: The ops test framework
+        application_name: The name of the application
+        desired_count: The number of units to scale to
+        wait: Boolean indicating whether to wait until units
+            reach desired count.
+    """
+    if len(ops_test.model.applications[application_name].units) == desired_count:
+        return
+    await ops_test.model.applications[application_name].scale(desired_count)
+
+    if desired_count > 0 and wait:
+        async with ops_test.fast_forward():
+            await ops_test.model.wait_for_idle(
+                apps=[application_name],
+                status="active",
+                timeout=1200,
+                wait_for_exact_units=desired_count,
+                raise_on_blocked=True,
+            )
+
+    assert len(ops_test.model.applications[application_name].units) == desired_count
+
+
+async def kubectl_delete(ops_test: OpsTest, unit: ops.model.Unit, wait: bool = True) -> None:
+    """Delete the underlying pod for a unit."""
+    kubectl_cmd = (
+        "microk8s",
+        "kubectl",
+        "delete",
+        "pod",
+        f"--wait={wait}",
+        f"-n {ops_test.model_name}",
+        unit.name.replace("/", "-"),
+    )
+    logger.info(f"Command: {kubectl_cmd}")
+    ret_code, _, _ = await ops_test.run(*kubectl_cmd)
+    assert ret_code == 0, "Unit failed to delete"
