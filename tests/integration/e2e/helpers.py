@@ -21,10 +21,11 @@ def check_produced_and_consumed_messages(uris: str, collection_name: str):
     logger.debug(f"Topic: {collection_name}")
     produced_messages = []
     consumed_messages = []
+    logger.info(f"URI: {uris}")
     try:
         client = MongoClient(
             uris,
-            directConnection=False,
+            directConnection=True,
             connect=False,
             serverSelectionTimeoutMS=1000,
             connectTimeoutMS=2000,
@@ -78,17 +79,31 @@ def get_random_topic() -> str:
     return f"topic-{''.join(random.choices(string.ascii_lowercase, k=4))}"
 
 
+async def kubectl_delete(ops_test: OpsTest, unit: ops.model.Unit, wait: bool = True) -> None:
+    """Delete the underlying pod for a unit."""
+    kubectl_cmd = (
+        "microk8s",
+        "kubectl",
+        "delete",
+        "pod",
+        f"--wait={wait}",
+        f"-n{ops_test.model_name}",
+        unit.name.replace("/", "-"),
+    )
+    logger.info(f"Command: {kubectl_cmd}")
+    ret_code, _, _ = await ops_test.run(*kubectl_cmd)
+    assert ret_code == 0, "Unit failed to delete"
+    
 async def scale_application(
     ops_test: OpsTest, application_name: str, desired_count: int, wait: bool = True
 ) -> None:
     """Scale a given application to the desired unit count.
-
     Args:
         ops_test: The ops test framework
         application_name: The name of the application
         desired_count: The number of units to scale to
         wait: Boolean indicating whether to wait until units
-            reach desired count.
+            reach desired count
     """
     if len(ops_test.model.applications[application_name].units) == desired_count:
         return
@@ -99,25 +114,16 @@ async def scale_application(
             await ops_test.model.wait_for_idle(
                 apps=[application_name],
                 status="active",
-                timeout=1200,
+                timeout=15 * 60,
                 wait_for_exact_units=desired_count,
                 raise_on_blocked=True,
             )
 
     assert len(ops_test.model.applications[application_name].units) == desired_count
+    
 
-
-async def kubectl_delete(ops_test: OpsTest, unit: ops.model.Unit, wait: bool = True) -> None:
-    """Delete the underlying pod for a unit."""
-    kubectl_cmd = (
-        "microk8s",
-        "kubectl",
-        "delete",
-        "pod",
-        f"--wait={wait}",
-        f"-n {ops_test.model_name}",
-        unit.name.replace("/", "-"),
-    )
-    logger.info(f"Command: {kubectl_cmd}")
-    ret_code, _, _ = await ops_test.run(*kubectl_cmd)
-    assert ret_code == 0, "Unit failed to delete"
+async def get_address(ops_test: OpsTest, app_name, unit_num=0) -> str:
+    """Get the address for a unit."""
+    status = await ops_test.model.get_status()  # noqa: F821
+    address = status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["address"]
+    return address

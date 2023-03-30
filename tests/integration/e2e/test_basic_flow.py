@@ -11,8 +11,10 @@ from pytest_operator.plugin import OpsTest
 from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
+    get_address,
     get_random_topic,
     kubectl_delete,
+    scale_application,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,22 +85,21 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app):
 
     await asyncio.sleep(100)
 
+    # skip scale down for the moment due the scale down bug in juju: https://bugs.launchpad.net/juju/+bug/1977582
+    
     # logger.info("Scale down consumer")
-    # await ops_test.model.applications[consumer].scale(1)
-    # await ops_test.model.block_until(lambda: len(ops_test.model.applications[consumer].units) == 1)
-    logger.info("Scale down consumer")
-    res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[2])
-    logger.info(f"Res: {res}")
-    res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[1])
-    logger.info(f"Res: {res}")
-    await ops_test.model.block_until(
-        lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
-    )
-    await ops_test.model.wait_for_idle(apps=[consumer], status="active", timeout=1000)
+    # res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[2])
+    # logger.info(f"Res: {res}")
+    # await scale_application(ops_test,application_name=consumer,desired_count=2)
+    # res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[1])
+    # await scale_application(ops_test,application_name=consumer,desired_count=1)
+    # logger.info(f"Res: {res}")
+    # await ops_test.model.block_until(
+    #     lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
+    # )
+    # await ops_test.model.wait_for_idle(apps=[consumer], status="active", timeout=1000)
+    # logger.info("End scale down")
 
-    logger.info("End scale down")
-
-    await asyncio.sleep(100)
 
     # destroy producer and consumer during teardown.
 
@@ -121,8 +122,14 @@ async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
     logger.info(f"Credentials: {credentials}")
 
     uris = credentials["mongodb"]["uris"]
-
-    check_produced_and_consumed_messages(uris, TOPIC)
+    
+    address = await get_address(ops_test=ops_test, app_name=DATABASE_CHARM_NAME)
+    
+    hostname = "mongodb-k8s-0.mongodb-k8s-endpoints"
+    
+    uri = str(uris).replace(hostname, address)
+    
+    check_produced_and_consumed_messages(uri, TOPIC)
 
     await ops_test.model.applications[DATABASE_CHARM_NAME].remove()
     await ops_test.model.wait_for_idle(

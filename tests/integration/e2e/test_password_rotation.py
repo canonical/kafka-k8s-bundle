@@ -11,6 +11,7 @@ from pytest_operator.plugin import OpsTest
 from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
+    get_address,
     get_random_topic,
 )
 
@@ -103,9 +104,13 @@ async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
 
     logger.info(f"Credentials: {credentials}")
 
-    uris = credentials[DATABASE_CHARM_NAME]["uris"]
-
-    check_produced_and_consumed_messages(uris, TOPIC)
+    uris = credentials["mongodb"]["uris"]
+    address = await get_address(ops_test=ops_test, app_name=DATABASE_CHARM_NAME)
+    
+    hostname = "mongodb-k8s-0.mongodb-k8s-endpoints"
+    
+    uri = str(uris).replace(hostname, address)
+    check_produced_and_consumed_messages(uri, TOPIC)
 
     await ops_test.model.applications[DATABASE_CHARM_NAME].remove()
     await ops_test.model.wait_for_idle(
