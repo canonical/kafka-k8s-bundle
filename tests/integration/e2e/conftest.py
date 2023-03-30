@@ -256,7 +256,9 @@ async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
         logger.info(f"tearing down {app}")
         # check if application is in the
         if app in ops_test.model.applications:
-            await ops_test.model.applications[app].remove_relation(f"{app}:database", f"{DATABASE_CHARM_NAME}")
+            await ops_test.model.applications[app].remove_relation(
+                f"{app}:database", f"{DATABASE_CHARM_NAME}"
+            )
             await ops_test.model.wait_for_idle(apps=[DATABASE_CHARM_NAME, app], idle_period=10)
             await ops_test.model.applications[app].remove()
             await ops_test.model.wait_for_idle(

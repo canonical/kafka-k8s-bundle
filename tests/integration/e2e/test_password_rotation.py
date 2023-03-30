@@ -106,9 +106,9 @@ async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
 
     uris = credentials["mongodb"]["uris"]
     address = await get_address(ops_test=ops_test, app_name=DATABASE_CHARM_NAME)
-    
+
     hostname = "mongodb-k8s-0.mongodb-k8s-endpoints"
-    
+
     uri = str(uris).replace(hostname, address)
     check_produced_and_consumed_messages(uri, TOPIC)
 
