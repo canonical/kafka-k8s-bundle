@@ -28,9 +28,9 @@ jobs:
       - name: Run linters
         run: tox run -e lint
 
-  build:
-    name: Build charms
-    uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
+  # build:
+  #   name: Build charms
+  #   uses: canonical/data-platform-workflows/.github/workflows/build_charms_with_cache.yaml@v2
 
   integration-test:
     strategy:
