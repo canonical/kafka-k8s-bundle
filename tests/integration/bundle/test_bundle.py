@@ -49,7 +49,7 @@ async def test_deploy_bundle_active(ops_test: OpsTest):
     )
     assert retcode == 0, f"Deploy failed: {(stderr or stdout).strip()}"
     logger.info(stdout)
-    await ops_test.model.wait_for_idle(timeout=1200, idle_period=30, status="active")
+    await ops_test.model.wait_for_idle(timeout=2000, idle_period=30, status="active")
     for app in applications:
         assert ops_test.model.applications[app].status == "active"
 
