@@ -18,6 +18,7 @@ from tests.integration.bundle.helpers import (
 )
 from tests.integration.bundle.literals import (
     BUNDLE_PATH,
+    CLIENT_CHARM_NAME,
     KAFKA,
     ZOOKEEPER,
 )
@@ -73,12 +74,11 @@ async def test_deploy_app_charm_relate(ops_test: OpsTest):
 
     config = {"role": "producer", "topic_name": TOPIC, "num_messages": 50}
     await ops_test.model.deploy(
-        # CLIENT_CHARM_NAME,
-        "/home/ubuntu/git/kafka-test-app/kafka-test-app_ubuntu-22.04-amd64.charm",
+        CLIENT_CHARM_NAME,
         application_name=PRODUCER,
         num_units=1,
         series="jammy",
-        # channel="edge",
+        channel="edge",
         config=config,
     )
     await ops_test.model.wait_for_idle(apps=[PRODUCER])
