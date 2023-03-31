@@ -23,9 +23,9 @@ target-version = ["py310"]
 profile = "black"
 
 [tool.poetry]
-name = "kafka-bundle"
+name = "kafka-k8s-bundle"
 version = "1.0"
-description = "kafka-bundle"
+description = "kafka-k8s-bundle"
 authors = [""]
 
 [tool.poetry.dependencies]
