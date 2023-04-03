@@ -118,16 +118,22 @@ async def deploy_cluster(ops_test: OpsTest, tls):
             channel="beta",
             config={"generate-self-signed-certificates": "true", "ca-common-name": "Canonical"},
         )
-        await ops_test.model.wait_for_idle(apps=[TLS_CHARM_NAME])
+        await ops_test.model.wait_for_idle(apps=[TLS_CHARM_NAME], status="active", timeout=1200)
 
         # block until non-tls cluster completion
         await deploy_non_tls
 
-        async with ops_test.fast_forward():
+        async with ops_test.fast_forward(fast_interval="30s"):
             await ops_test.model.add_relation(ZOOKEEPER_CHARM_NAME, TLS_CHARM_NAME)
+            await ops_test.model.wait_for_idle(
+                apps=[TLS_CHARM_NAME, ZOOKEEPER_CHARM_NAME],
+                idle_period=30,
+                status="active",
+                timeout=1800,
+            )
             await ops_test.model.add_relation(f"{KAFKA_CHARM_NAME}", TLS_CHARM_NAME)
             await ops_test.model.wait_for_idle(
-                apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME],
+                apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME, TLS_CHARM_NAME],
                 idle_period=30,
                 status="active",
                 timeout=1800,
@@ -207,7 +213,6 @@ async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
         if consumer_group_prefix:
             config["consumer_group_prefix"] = consumer_group_prefix
 
-        # todo substitute with the published charm
         await ops_test.model.deploy(
             KAFKA_TEST_APP_CHARM_NAME,
             application_name=generated_app_name,
