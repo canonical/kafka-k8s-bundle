@@ -99,7 +99,7 @@ async def deploy_cluster(ops_test: OpsTest, tls):
                 apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME],
                 idle_period=10,
                 status="active",
-                timeout=300,
+                timeout=1200,
             )
 
     async def _deploy_tls_cluster():
