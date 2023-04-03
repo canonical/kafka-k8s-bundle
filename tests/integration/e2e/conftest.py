@@ -15,6 +15,7 @@ from literals import (
     CLIENT_CHARM_NAME,
     DATABASE_CHARM_NAME,
     KAFKA_CHARM_NAME,
+    KAFKA_TEST_APP_CHARM_NAME,
     TLS_CHARM_NAME,
     ZOOKEEPER_CHARM_NAME,
 )
@@ -208,12 +209,11 @@ async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
 
         # todo substitute with the published charm
         await ops_test.model.deploy(
-            # KAFKA_TEST_APP_CHARM_NAME,
-            "/home/ubuntu/git/kafka-test-app/kafka-test-app_ubuntu-22.04-amd64.charm",
+            KAFKA_TEST_APP_CHARM_NAME,
             application_name=generated_app_name,
             num_units=1,
             series="jammy",
-            # channel="edge",
+            channel="edge",
             config=config,
         )
         await ops_test.model.wait_for_idle(
