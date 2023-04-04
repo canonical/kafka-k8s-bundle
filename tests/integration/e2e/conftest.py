@@ -180,8 +180,6 @@ async def deploy_data_integrator(ops_test: OpsTest, kafka):
     logger.info(f"tearing down {apps}")
     for app in apps:
         logger.info(f"tearing down {app}")
-        await ops_test.model.applications[app].remove_relation(f"{app}:kafka", f"{kafka}")
-        await ops_test.model.wait_for_idle(apps=[kafka, app], idle_period=10)
         await ops_test.model.applications[app].remove()
 
     await ops_test.model.wait_for_idle(apps=[kafka], idle_period=30, status="active", timeout=1800)
