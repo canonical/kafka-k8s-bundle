@@ -30,7 +30,7 @@ async def test_cluster_is_deployed_successfully(
 
 
 @pytest.mark.abort_on_fail
-async def test_clients_actually_set_up(ops_test: OpsTest, deploy_data_integrator):
+async def test_clients_actually_set_up(ops_test: OpsTest, deploy_data_integrator, kafka):
     producer = await deploy_data_integrator(
         {"extra-user-roles": "producer", "topic-name": "test-topic"}
     )
@@ -50,6 +50,12 @@ async def test_clients_actually_set_up(ops_test: OpsTest, deploy_data_integrator
 
     assert ops_test.model.applications[consumer].status == "active"
     assert ops_test.model.applications[producer].status == "active"
+
+    await ops_test.model.applications[consumer].remove_relation(f"{consumer}:kafka", f"{kafka}")
+    await ops_test.model.wait_for_idle(apps=[consumer, kafka], idle_period=10)
+
+    await ops_test.model.applications[producer].remove_relation(f"{producer}:kafka", f"{kafka}")
+    await ops_test.model.wait_for_idle(apps=[producer, kafka], idle_period=10)
 
 
 @pytest.mark.abort_on_fail
