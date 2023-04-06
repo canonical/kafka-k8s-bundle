@@ -1,6 +1,6 @@
 description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, supported by Apache ZooKeeper
-issues: https://github.com/canonical/kafka-bundle/issues/new
-source: https://github.com/canonical/kafka-bundle
+issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
+source: https://github.com/canonical/kafka-k8s-bundle
 bundle: kubernetes
 name: kafka-k8s-bundle
 applications:
