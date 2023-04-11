@@ -56,7 +56,9 @@ async def test_cluster_is_deployed_successfully(
 
 
 @pytest.mark.abort_on_fail
-async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, deploy_data_integrator, kafka, integrator):
+async def test_test_app_actually_set_up(
+    ops_test: OpsTest, deploy_test_app, deploy_data_integrator, kafka, integrator
+):
     # producer credentials
     producer_parameters_1 = None
     producer_parameters_2 = None
@@ -115,10 +117,10 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
         consumer_parameters_2 = get_action_parameters(consumer_credentials_2, TOPIC)
 
         assert consumer_parameters_2 != consumer_parameters_1
-    
+
     producer_1 = await deploy_test_app(role="producer", topic_name=TOPIC, num_messages=2500)
     assert ops_test.model.applications[producer_1].status == "active"
-    
+
     if integrator:
         # start producer
         assert producer_parameters_1
@@ -132,13 +134,13 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
         await ops_test.model.wait_for_idle(
             apps=[producer_1, kafka], idle_period=30, status="active", timeout=1800
         )
-        logger.info(f"Producer {producer_1} related to Kafka") 
-    
+        logger.info(f"Producer {producer_1} related to Kafka")
+
     consumer_1 = await deploy_test_app(
         role="consumer", topic_name=TOPIC, consumer_group_prefix="cg"
     )
     assert ops_test.model.applications[consumer_1].status == "active"
-    
+
     if integrator:
         # start consumer
         assert consumer_parameters_1
@@ -162,7 +164,7 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
         role="consumer", topic_name=TOPIC, consumer_group_prefix="cg"
     )
     assert ops_test.model.applications[consumer_2].status == "active"
-    
+
     if integrator:
         assert consumer_parameters_2
         # start second consumer
@@ -177,7 +179,7 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
             apps=[consumer_2, kafka], idle_period=30, status="active", timeout=1800
         )
         logger.info(f"Consumer {consumer_2} related to Kafka")
-        
+
     await asyncio.sleep(100)
 
     # remove first consumer
@@ -190,7 +192,7 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
         )
         await ops_test.model.wait_for_idle(apps=[consumer_1, kafka], idle_period=10)
         logger.info(f"Consumer {consumer_1} unrelate from Kafka")
-    
+
     await ops_test.model.wait_for_idle(
         apps=[KAFKA_CHARM_NAME], idle_period=10, status="active", timeout=1800
     )
@@ -214,10 +216,10 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
             apps=[producer_2, kafka], idle_period=30, status="active", timeout=1800
         )
         logger.info(f"Producer {producer_2} related to Kafka")
-    
+
     await asyncio.sleep(100)
-    
-     # destroy producer and consumer during teardown.
+
+    # destroy producer and consumer during teardown.
 
     if integrator:
         # stop process
@@ -241,7 +243,6 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, depl
         logger.info(f"Producer {producer_2} unrelate from Kafka")
 
     # destroy producer and consumer during teardown.
-
 
 
 @pytest.mark.abort_on_fail

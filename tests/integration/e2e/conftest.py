@@ -43,7 +43,9 @@ def pytest_addoption(parser):
         default=TLS_CHARM_NAME,
     )
     parser.addoption(
-        "--integrator", action="store_true", help="set usage of credentials provided by the data-integrator"
+        "--integrator",
+        action="store_true",
+        help="set usage of credentials provided by the data-integrator",
     )
 
 
@@ -64,7 +66,7 @@ def pytest_generate_tests(metafunc):
     certificates = metafunc.config.option.certificates
     if "certificates" in metafunc.fixturenames:
         metafunc.parametrize("certificates", [certificates], scope="module")
-        
+
     integrator = metafunc.config.option.integrator
     if "integrator" in metafunc.fixturenames:
         metafunc.parametrize("integrator", [bool(integrator)], scope="module")

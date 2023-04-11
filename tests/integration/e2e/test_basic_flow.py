@@ -12,6 +12,7 @@ from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
     fetch_action_start_process,
+    get_action_parameters,
     get_address,
     get_random_topic,
 )
@@ -49,13 +50,17 @@ async def test_cluster_is_deployed_successfully(
         ),
     )
     await ops_test.model.wait_for_idle(
-        apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME, DATABASE_CHARM_NAME], status="active",timeout=1200,
+        apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME, DATABASE_CHARM_NAME],
+        status="active",
+        timeout=1200,
         idle_period=30,
     )
 
 
 @pytest.mark.abort_on_fail
-async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, kafka, integrator):
+async def test_test_app_actually_set_up(
+    ops_test: OpsTest, deploy_test_app, deploy_data_integrator, kafka, integrator
+):
     producer_parameters = None
     consumer_parameters = None
     if integrator:
@@ -86,13 +91,12 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, kafk
         )
         consumer_parameters = get_action_parameters(consumer_credentials, TOPIC)
         assert producer_parameters != consumer_parameters
-    
+
     # deploy producer and consumer
 
     producer = await deploy_test_app(role="producer", topic_name=TOPIC)
     assert ops_test.model.applications[producer].status == "active"
-    
-    
+
     if integrator:
         # start producer with action
         assert producer_parameters
@@ -107,11 +111,10 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, kafk
             apps=[producer, kafka], idle_period=30, status="active", timeout=1800
         )
         logger.info(f"Producer {producer} related to Kafka")
-    
-    
+
     consumer = await deploy_test_app(role="consumer", topic_name=TOPIC)
     assert ops_test.model.applications[consumer].status == "active"
-    
+
     if integrator:
         # start consumer with action
         assert consumer_parameters
@@ -147,7 +150,7 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, kafk
             ops_test.model.applications[producer].units[2], producer_parameters
         )
         logger.info(f"Producer process started with pid: {pid_2}")
-    
+
     await asyncio.sleep(100)
 
     # scale up consumer
@@ -157,7 +160,7 @@ async def test_test_app_actually_set_up(ops_test: OpsTest, deploy_test_app, kafk
     await ops_test.model.wait_for_idle(
         apps=[consumer], status="active", timeout=1000, idle_period=40
     )
-    
+
     if integrator:
         # start consumer process on new units
         assert consumer_parameters
