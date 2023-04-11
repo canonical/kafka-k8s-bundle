@@ -12,8 +12,8 @@ from typing import Dict, Literal, Optional
 
 import pytest
 from literals import (
-    CLIENT_CHARM_NAME,
     DATABASE_CHARM_NAME,
+    INTEGRATOR_CHARM_NAME,
     KAFKA_CHARM_NAME,
     KAFKA_TEST_APP_CHARM_NAME,
     TLS_CHARM_NAME,
@@ -172,7 +172,7 @@ async def deploy_data_integrator(ops_test: OpsTest, kafka):
 
         logger.info(f"{generated_app_name=} - {apps=}")
         await ops_test.model.deploy(
-            CLIENT_CHARM_NAME,
+            INTEGRATOR_CHARM_NAME,
             application_name=generated_app_name,
             num_units=1,
             series="jammy",
