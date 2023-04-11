@@ -54,6 +54,9 @@ def check_produced_and_consumed_messages(uris: str, collection_name: str):
 
         assert len(consumed_messages) >= len(produced_messages)
         assert abs(len(consumed_messages) - len(produced_messages)) < 3
+        if len(consumed_messages) < len(produced_messages):
+            missing_elem = list(set(produced_messages) - set(consumed_messages))
+            logger.error(missing_elem)
 
         client.close()
     except Exception as e:
@@ -129,3 +132,43 @@ async def get_address(ops_test: OpsTest, app_name, unit_num=0) -> str:
     status = await ops_test.model.get_status()  # noqa: F821
     address = status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["address"]
     return address
+
+
+def get_action_parameters(credentials: Dict[str, str], topic_name: str):
+    """Construct parameter dictionary needed to stark consumer/producer with the action."""
+    logger.info(f"Credentials: {credentials}")
+    assert "kafka" in credentials
+    action_data = {
+        "servers": credentials["kafka"]["endpoints"],
+        "username": credentials["kafka"]["username"],
+        "password": credentials["kafka"]["password"],
+        "topic_name": topic_name,
+    }
+    if "consumer-group-prefix" in credentials["kafka"]:
+        action_data["consumer_group_prefix"] = credentials["kafka"]["consumer-group-prefix"]
+    return action_data
+
+
+async def fetch_action_start_process(unit: Unit, action_params: Dict[str, str]) -> Dict:
+    """Helper to run an action to start consumer/producer.
+    Args:
+        unit: the target unit.
+        action_params: A dictionary that contains all commands parameters.
+    Returns:
+        A dictionary with the result of the action.
+    """
+    action = await unit.run_action(action_name="start-process", **action_params)
+    result = await action.wait()
+    return result.results
+
+
+async def fetch_action_stop_process(unit: Unit) -> Dict:
+    """Helper to run an action to stop consumer/producer.
+    Args:
+        unit: the target unit.
+    Returns:
+        A dictionary with the result of the action.
+    """
+    action = await unit.run_action(action_name="stop-process")
+    result = await action.wait()
+    return result.results
