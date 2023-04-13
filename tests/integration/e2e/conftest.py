@@ -12,8 +12,8 @@ from typing import Dict, Literal, Optional
 
 import pytest
 from literals import (
-    CLIENT_CHARM_NAME,
     DATABASE_CHARM_NAME,
+    INTEGRATOR_CHARM_NAME,
     KAFKA_CHARM_NAME,
     KAFKA_TEST_APP_CHARM_NAME,
     TLS_CHARM_NAME,
@@ -42,6 +42,11 @@ def pytest_addoption(parser):
         help="name of pre-deployed tls-certificates app",
         default=TLS_CHARM_NAME,
     )
+    parser.addoption(
+        "--integrator",
+        action="store_true",
+        help="set usage of credentials provided by the data-integrator",
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -61,6 +66,10 @@ def pytest_generate_tests(metafunc):
     certificates = metafunc.config.option.certificates
     if "certificates" in metafunc.fixturenames:
         metafunc.parametrize("certificates", [certificates], scope="module")
+
+    integrator = metafunc.config.option.integrator
+    if "integrator" in metafunc.fixturenames:
+        metafunc.parametrize("integrator", [bool(integrator)], scope="module")
 
 
 ### - FIXTURES - ###
@@ -163,7 +172,7 @@ async def deploy_data_integrator(ops_test: OpsTest, kafka):
 
         logger.info(f"{generated_app_name=} - {apps=}")
         await ops_test.model.deploy(
-            CLIENT_CHARM_NAME,
+            INTEGRATOR_CHARM_NAME,
             application_name=generated_app_name,
             num_units=1,
             series="jammy",
@@ -242,12 +251,6 @@ async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
             idle_period=30,
             status="active",
             timeout=1800,
-        )
-
-        # Relate with Kafka
-        await ops_test.model.add_relation(generated_app_name, kafka)
-        await ops_test.model.wait_for_idle(
-            apps=[generated_app_name, kafka], idle_period=30, status="active", timeout=1800
         )
 
         return generated_app_name

@@ -98,7 +98,7 @@ def get_zookeeper_connection(unit_name: str, model_full_name: str) -> Tuple[List
 
 def check_properties(model_full_name: str, unit: str):
     properties = check_output(
-        f"JUJU_MODEL={model_full_name} juju ssh --container zookeeper {unit} 'cat /opt/zookeeper/conf/zoo.cfg'",
+        f"JUJU_MODEL={model_full_name} juju ssh --container zookeeper {unit} 'cat /etc/zookeeper/zoo.cfg'",
         stderr=PIPE,
         shell=True,
         universal_newlines=True,
