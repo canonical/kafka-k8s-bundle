@@ -8,17 +8,18 @@ from typing import Any, Dict, List, Set, Tuple
 
 import yaml
 from pytest_operator.plugin import OpsTest
+from tests.integration.bundle.literals import BINARIES_PATH, CONF_PATH
 
 from .auth import Acl, KafkaAuth
 
 logger = logging.getLogger(__name__)
 
 
-def load_acls(model_full_name: str, zookeeper_uri: str, unit_name: str) -> Set[Acl]:
-    command = f"JUJU_MODEL={model_full_name} juju ssh --container kafka {unit_name} 'KAFKA_OPTS=-Djava.security.auth.login.config=/data/kafka/config/kafka-jaas.cfg ./opt/kafka/bin/kafka-acls.sh --authorizer-properties zookeeper.connect={zookeeper_uri} --list --zk-tls-config-file=/data/kafka/config/server.properties'"
+def load_acls(model_full_name: str, bootstrap_server: str, unit_name: str) -> Set[Acl]:
+    container_command = f"KAFKA_OPTS=-Djava.security.auth.login.config={CONF_PATH}/kafka-jaas.cfg {BINARIES_PATH}/bin/kafka-acls.sh --bootstrap-server {bootstrap_server} --command-config {CONF_PATH}/client.properties --list"
     try:
         result = check_output(
-            command,
+            f"JUJU_MODEL={model_full_name} juju ssh --container kafka {unit_name} '{container_command}'",
             stderr=PIPE,
             shell=True,
             universal_newlines=True,
@@ -49,11 +50,30 @@ def load_super_users(model_full_name: str, unit_name: str) -> List[str]:
     return []
 
 
-def check_user(model_full_name: str, username: str, zookeeper_uri: str, unit_name: str) -> None:
-    command = f"JUJU_MODEL={model_full_name} juju ssh --container kafka {unit_name} 'KAFKA_OPTS=-Djava.security.auth.login.config=/data/kafka/config/kafka-jaas.cfg ./opt/kafka/bin/kafka-configs.sh --zookeeper {zookeeper_uri} --describe --entity-type users --entity-name {username} --zk-tls-config-file=/data/kafka/config/server.properties'"
+def check_produced_messages(model_full_name: str, unit_name: str) -> bool:
+
+    command = (f"JUJU_MODEL={model_full_name} juju ssh {unit_name} 'cat /tmp/*.log'",)
+    result = check_output(
+        command,
+        stderr=PIPE,
+        shell=True,
+        universal_newlines=True,
+    )
+    logs = result.splitlines()
+    for line in logs:
+        print(line)
+        if "Message #" in line:
+            return True
+
+    return False
+
+
+def check_user(model_full_name: str, username: str, bootstrap_server: str, unit_name: str) -> None:
+    container_command = f"KAFKA_OPTS=-Djava.security.auth.login.config={CONF_PATH}/kafka-jaas.cfg {BINARIES_PATH}/bin/kafka-configs.sh --bootstrap-server {bootstrap_server} --command-config {CONF_PATH}/client.properties --describe --entity-type users --entity-name {username}"
+
     try:
         result = check_output(
-            command,
+            f"JUJU_MODEL={model_full_name} juju ssh --container kafka {unit_name} '{container_command}'",
             stderr=PIPE,
             shell=True,
             universal_newlines=True,
