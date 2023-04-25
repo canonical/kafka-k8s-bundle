@@ -10,8 +10,10 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 from tests.integration.bundle.helpers import (
+    check_produced_messages,
     check_properties,
     check_user,
+    get_address,
     get_zookeeper_connection,
     load_acls,
     ping_servers,
@@ -20,6 +22,7 @@ from tests.integration.bundle.literals import (
     BUNDLE_PATH,
     CLIENT_CHARM_NAME,
     KAFKA,
+    TLS_PORT,
     ZOOKEEPER,
 )
 
@@ -100,6 +103,8 @@ async def test_deploy_app_charm_relate(ops_test: OpsTest):
 
     await asyncio.sleep(10)
 
+    check_produced_messages(ops_test.model_full_name, f"{PRODUCER}/0")
+
 
 @pytest.mark.abort_on_fail
 async def test_apps_up_and_running(ops_test: OpsTest, usernames):
@@ -116,18 +121,20 @@ async def test_apps_up_and_running(ops_test: OpsTest, usernames):
         unit_name=f"{KAFKA}/0", model_full_name=ops_test.model_full_name
     )
     usernames.update(returned_usernames)
+    ip_address = await get_address(ops_test, app_name=KAFKA, unit_num="0")
+    bootstrap_server = f"{ip_address}:{TLS_PORT}"
 
     for username in usernames:
         check_user(
             username=username,
-            zookeeper_uri=zookeeper_uri,
+            bootstrap_server=bootstrap_server,
             model_full_name=ops_test.model_full_name,
             unit_name=f"{KAFKA}/0",
         )
 
     for acl in load_acls(
         model_full_name=ops_test.model_full_name,
-        zookeeper_uri=zookeeper_uri,
+        bootstrap_server=bootstrap_server,
         unit_name=f"{KAFKA}/0",
     ):
         assert acl.username in usernames
