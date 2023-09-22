@@ -1,0 +1,34 @@
+applications:
+  kafka:
+    channel: 3/edge
+    charm: kafka-k8s
+    num_units: 1
+    revision: 39
+    series: jammy
+  tls-certificates-operator:
+    channel: latest/edge
+    charm: tls-certificates-operator
+    num_units: 1
+    options:
+      ca-common-name: canonical
+      generate-self-signed-certificates: true
+    revision: 27
+    series: jammy
+  zookeeper:
+    channel: 3/edge
+    charm: zookeeper-k8s
+    num_units: 3
+    revision: 33
+    series: jammy
+description: A fast, secure and fault-tolerant Apache Kafka, supported by Apache ZooKeeper
+issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
+name: kafka-bundle
+relations:
+- - zookeeper-k8s:certificates
+  - tls-certificates-operator:certificates
+- - kafka-k8s:certificates
+  - tls-certificates-operator:certificates
+- - kafka-k8s:zookeeper
+  - zookeeper-k8s:zookeeper
+series: jammy
+source: https://github.com/canonical/kafka-k8s-bundle
