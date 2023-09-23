@@ -1,25 +1,25 @@
 applications:
   kafka-k8s:
-    channel: 3/edge
     charm: kafka-k8s
-    num_units: 1
+    scale: 1
+    channel: 3/edge
     revision: 39
-    series: jammy
+    constraints: arch=amd64
   tls-certificates-operator:
-    channel: latest/edge
     charm: tls-certificates-operator
-    num_units: 1
+    scale: 1
     options:
       ca-common-name: canonical
       generate-self-signed-certificates: true
+    channel: latest/edge
     revision: 27
-    series: jammy
+    constraints: arch=amd64
   zookeeper-k8s:
-    channel: 3/edge
     charm: zookeeper-k8s
-    num_units: 3
+    scale: 3
+    channel: 3/edge
     revision: 33
-    series: jammy
+    constraints: arch=amd64
 description: A fast, secure and fault-tolerant Apache Kafka, supported by Apache ZooKeeper
 issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
 name: kafka-bundle
