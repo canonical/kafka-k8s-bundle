@@ -1,37 +1,19 @@
-name: Bundle update available
+ Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+name: Update bundle
 on:
   schedule:
-    - cron:  '0 */8 * * 1-5'
+    - cron: '53 0 * * *'  # Daily at 00:53 UTC
   workflow_dispatch:
 
 jobs:
-  update-bundles:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install tox
-        run: python3 -m pip install tox
-      - name: check for updates
-        run: tox -e update_bundle
-      - name: create pull request
-        id: cpr
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.PAT }}
-          commit-message: Update bundles
-          committer: GitHub <noreply@github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          signoff: false
-          branch: update-bundles
-          delete-branch: true
-          title: 'Update Bundles'
-          body: |
-            Update bundles with new revisions from Charmhub.
-          labels: |
-            automated pr
-          assignees: team-reviewers, marcoppenheimer, deusebio
-          reviewers: team-reviewers, marcoppenheimer, deusebio
-          team-reviewers: |
-            owners
-            maintainers
-          draft: false
+  update-bundle:
+    name: Update bundle
+    uses: canonical/data-platform-workflows/.github/workflows/update_bundle.yaml@v2
+    with:
+      path-to-bundle-file: releases/3/kafka-k8s/bundle.yaml
+      reviewers: team-reviewers, marcoppenheimer, deusebio
+    secrets:
+      token: ${{ secrets.PAT }}
+
+

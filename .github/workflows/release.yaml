@@ -20,7 +20,7 @@ jobs:
           # Use a temporary directory to support publishing any of the bundles in this root dir
           BUILD_DIR=.bundle_build
           mkdir $BUILD_DIR
-          cp ./releases/latest/kafka-k8s/* $BUILD_DIR/
+          cp ./releases/3/kafka-k8s/* $BUILD_DIR/
           cd $BUILD_DIR
           # FIXME: token will expire on 2023-10-27
           export CHARMCRAFT_AUTH=${{ secrets.CHARMCRAFT_AUTH }}
