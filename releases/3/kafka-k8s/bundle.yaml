@@ -16,8 +16,8 @@ applications:
     options:
       ca-common-name: canonical
       generate-self-signed-certificates: true
-    channel: latest/edge
-    revision: 27
+    channel: legacy/stable
+    revision: 22
     constraints: arch=amd64
   zookeeper-k8s:
     charm: zookeeper-k8s

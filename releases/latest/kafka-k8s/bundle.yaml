@@ -10,7 +10,7 @@ applications:
     constraints: arch=amd64
     scale: 1
   tls-certificates-operator:
-    channel: latest/edge
+    channel: legacy/stable
     charm: tls-certificates-operator
     constraints: arch=amd64
     options:
