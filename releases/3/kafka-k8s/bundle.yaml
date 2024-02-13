@@ -9,6 +9,8 @@ applications:
     scale: 1
     channel: 3/edge
     revision: 39
+    resources:
+      kafka-image: 33
     constraints: arch=amd64
   tls-certificates-operator:
     charm: tls-certificates-operator
@@ -24,6 +26,8 @@ applications:
     scale: 3
     channel: 3/edge
     revision: 33
+    resources:
+      zookeeper-image: 23
     constraints: arch=amd64
 relations:
 - - zookeeper-k8s:certificates
