@@ -17,6 +17,7 @@ from literals import (
     KAFKA_CHARM_NAME,
     KAFKA_TEST_APP_CHARM_NAME,
     TLS_CHARM_NAME,
+    TLS_REL_NAME,
     ZOOKEEPER_CHARM_NAME,
 )
 from pytest_operator.plugin import OpsTest
@@ -140,7 +141,7 @@ async def deploy_cluster(ops_test: OpsTest, tls):
                 status="active",
                 timeout=1800,
             )
-            await ops_test.model.add_relation(f"{KAFKA_CHARM_NAME}", TLS_CHARM_NAME)
+            await ops_test.model.add_relation(f"{KAFKA_CHARM_NAME}:{TLS_REL_NAME}", TLS_CHARM_NAME)
             await ops_test.model.wait_for_idle(
                 apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME, TLS_CHARM_NAME],
                 idle_period=30,

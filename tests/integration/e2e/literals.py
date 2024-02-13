@@ -9,5 +9,7 @@ TLS_CHARM_NAME = "tls-certificates-operator"
 KAFKA_CHARM_NAME = "kafka-k8s"
 ZOOKEEPER_CHARM_NAME = "zookeeper-k8s"
 
+TLS_REL_NAME = "certificates"
+
 DATABASE_CHARM_NAME = "mongodb-k8s"
 KAFKA_TEST_APP_CHARM_NAME = "kafka-test-app"
