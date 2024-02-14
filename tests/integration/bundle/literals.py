@@ -10,6 +10,7 @@ ZOOKEEPER = "zookeeper-k8s"
 KAFKA = "kafka-k8s"
 CLIENT_CHARM_NAME = "kafka-test-app"
 
+TLS_CHARM_NAME = "self-signed-certificates"
 
 CONF_PATH = "/etc/kafka"
 DATA_PATH = "/var/lib/kafka"
