@@ -12,14 +12,13 @@ applications:
     resources:
       kafka-image: 33
     constraints: arch=amd64
-  tls-certificates-operator:
-    charm: tls-certificates-operator
+  self-signed-certificates:
+    charm: self-signed-certificates
     scale: 1
     options:
       ca-common-name: canonical
-      generate-self-signed-certificates: true
-    channel: latest/edge
-    revision: 27
+    channel: latest/stable
+    revision: 72
     constraints: arch=amd64
   zookeeper-k8s:
     charm: zookeeper-k8s
@@ -31,8 +30,8 @@ applications:
     constraints: arch=amd64
 relations:
 - - zookeeper-k8s:certificates
-  - tls-certificates-operator:certificates
+  - self-signed-certificates:certificates
 - - kafka-k8s:certificates
-  - tls-certificates-operator:certificates
+  - self-signed-certificates:certificates
 - - kafka-k8s:zookeeper
   - zookeeper-k8s:zookeeper
