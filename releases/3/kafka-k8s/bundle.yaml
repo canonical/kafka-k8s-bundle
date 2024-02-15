@@ -8,9 +8,9 @@ applications:
     charm: kafka-k8s
     scale: 1
     channel: 3/edge
-    revision: 39
+    revision: 50
     resources:
-      kafka-image: 33
+      kafka-image: 43
     constraints: arch=amd64
   self-signed-certificates:
     charm: self-signed-certificates
@@ -24,9 +24,9 @@ applications:
     charm: zookeeper-k8s
     scale: 3
     channel: 3/edge
-    revision: 33
+    revision: 45
     resources:
-      zookeeper-image: 23
+      zookeeper-image: 28
     constraints: arch=amd64
 relations:
 - - zookeeper-k8s:certificates
