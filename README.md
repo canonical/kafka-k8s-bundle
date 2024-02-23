@@ -1,4 +1,7 @@
-# Kafka K8s Bundle
+# Charmed Kafka K8s Bundle
+[![Charmhub](https://charmhub.io/kafka-k8s-bundle/badge.svg)](https://charmhub.io/kafka-k8s-bundle)
+[![Release](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/release.yaml)
+[![Tests](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/canonical/kafka-k8s-bundle/actions/workflows/ci.yaml)
 
 This repository contains the k8s charm bundles for Kafka.
 
