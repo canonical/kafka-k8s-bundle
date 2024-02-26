@@ -7,7 +7,7 @@ applications:
   kafka-k8s:
     charm: kafka-k8s
     scale: 1
-    channel: 3/edge
+    channel: 3/candidate
     revision: 53
     resources:
       kafka-image: 43
@@ -23,7 +23,7 @@ applications:
   zookeeper-k8s:
     charm: zookeeper-k8s
     scale: 3
-    channel: 3/edge
+    channel: 3/candidate
     revision: 49
     resources:
       zookeeper-image: 29
