@@ -1,33 +1,33 @@
-description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, supported by Apache ZooKeeper
-issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
-source: https://github.com/canonical/kafka-k8s-bundle
-bundle: kubernetes
-name: kafka-k8s-bundle
 applications:
   kafka-k8s:
-    charm: kafka-k8s
-    scale: 1
     channel: 3/edge
-    revision: 50
+    charm: kafka-k8s
+    constraints: arch=amd64
     resources:
       kafka-image: 43
-    constraints: arch=amd64
-  self-signed-certificates:
-    charm: self-signed-certificates
+    revision: 56
     scale: 1
+  self-signed-certificates:
+    channel: latest/stable
+    charm: self-signed-certificates
+    constraints: arch=amd64
     options:
       ca-common-name: canonical
-    channel: latest/stable
     revision: 72
-    constraints: arch=amd64
+    scale: 1
   zookeeper-k8s:
-    charm: zookeeper-k8s
-    scale: 3
     channel: 3/edge
-    revision: 45
-    resources:
-      zookeeper-image: 28
+    charm: zookeeper-k8s
     constraints: arch=amd64
+    resources:
+      zookeeper-image: 29
+    revision: 51
+    scale: 3
+bundle: kubernetes
+description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, supported
+  by Apache ZooKeeper
+issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
+name: kafka-k8s-bundle
 relations:
 - - zookeeper-k8s:certificates
   - self-signed-certificates:certificates
@@ -35,3 +35,4 @@ relations:
   - self-signed-certificates:certificates
 - - kafka-k8s:zookeeper
   - zookeeper-k8s:zookeeper
+source: https://github.com/canonical/kafka-k8s-bundle
