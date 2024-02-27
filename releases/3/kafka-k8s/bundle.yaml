@@ -24,7 +24,7 @@ applications:
     charm: zookeeper-k8s
     scale: 3
     channel: 3/candidate
-    revision: 49
+    revision: 51
     resources:
       zookeeper-image: 29
     constraints: arch=amd64
