@@ -8,7 +8,7 @@ applications:
     charm: kafka-k8s
     scale: 1
     channel: 3/candidate
-    revision: 53
+    revision: 56
     resources:
       kafka-image: 43
     constraints: arch=amd64
