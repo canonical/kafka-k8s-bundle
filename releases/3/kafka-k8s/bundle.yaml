@@ -20,7 +20,7 @@ applications:
     charm: zookeeper-k8s
     constraints: arch=amd64
     resources:
-      zookeeper-image: 28
+      zookeeper-image: 29
     revision: 51
     scale: 3
 bundle: kubernetes
