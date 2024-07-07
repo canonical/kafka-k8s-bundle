@@ -13,7 +13,7 @@ applications:
     constraints: arch=amd64
     options:
       ca-common-name: canonical
-    revision: 72
+    revision: 155
     scale: 1
   zookeeper-k8s:
     channel: 3/edge
