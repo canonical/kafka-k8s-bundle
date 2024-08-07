@@ -14,6 +14,7 @@ from tests.integration.bundle.helpers import (
     check_properties,
     check_user,
     get_address,
+    get_kafka_users,
     get_zookeeper_connection,
     load_acls,
     ping_servers,
@@ -118,10 +119,14 @@ async def test_apps_up_and_running(ops_test: OpsTest, usernames):
         )
 
     # implicitly tests setting of kafka app data
-    returned_usernames, zookeeper_uri = get_zookeeper_connection(
-        unit_name=f"{KAFKA}/0", model_full_name=ops_test.model_full_name
+    zookeeper_usernames, zookeeper_uri = get_zookeeper_connection(
+        unit_name=f"{KAFKA}/0", owner=ZOOKEEPER, model_full_name=ops_test.model_full_name
     )
-    usernames.update(returned_usernames)
+    assert zookeeper_uri
+    assert len(zookeeper_usernames) > 0
+
+    usernames.update(get_kafka_users(f"{KAFKA}/0", ops_test.model_full_name))
+
     ip_address = await get_address(ops_test, app_name=KAFKA, unit_num="0")
     bootstrap_server = f"{ip_address}:{TLS_PORT}"
 

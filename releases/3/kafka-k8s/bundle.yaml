@@ -4,7 +4,7 @@ applications:
     charm: kafka-k8s
     constraints: arch=amd64
     resources:
-      kafka-image: 43
+      kafka-image: 46
     revision: 65
     scale: 1
   self-signed-certificates:
@@ -20,7 +20,7 @@ applications:
     charm: zookeeper-k8s
     constraints: arch=amd64
     resources:
-      zookeeper-image: 29
+      zookeeper-image: 31
     revision: 59
     scale: 3
 bundle: kubernetes
