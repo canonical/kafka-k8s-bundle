@@ -7,9 +7,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  workflow_call:
   pull_request:
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC
@@ -41,7 +40,12 @@ jobs:
           - integration-bundle
           - integration-e2e
           - integration-e2e-tls
-    name: ${{ matrix.tox-environments }}
+        juju:
+          - snap_channel: "3.4/stable"
+            agent: "3.4.2"
+          - snap_channel: "3.6/beta"
+            agent: "3.6-beta2"
+    name: ${{ matrix.tox-environment }}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
     needs:
       - lint
       # - build
@@ -54,7 +58,8 @@ jobs:
         # TODO: Replace with custom image on self-hosted runner
         uses: charmed-kubernetes/actions-operator@main
         with:
-          juju-channel: 3.4/stable
+          juju-channel: ${{ matrix.juju.snap_channel }}
+          bootstrap-options: "--agent-version ${{ matrix.juju.agent }}"
           provider: microk8s
           channel: 1.28-strict/stable
           microk8s-group: snap_microk8s
