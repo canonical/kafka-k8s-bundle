@@ -6,9 +6,13 @@ on:
       - main
 
 jobs:
+  integration-test:
+    uses: ./.github/workflows/ci.yaml
   publish-k8s-bundle:
     name: Publish K8s bundle
     runs-on: ubuntu-latest
+    needs:
+      - integration-test
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
