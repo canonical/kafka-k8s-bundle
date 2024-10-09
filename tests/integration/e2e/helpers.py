@@ -5,6 +5,7 @@
 import logging
 import random
 import string
+from subprocess import PIPE, STDOUT, CalledProcessError, check_output
 from typing import Dict
 
 import ops
@@ -38,7 +39,6 @@ def check_produced_and_consumed_messages(uris: str, collection_name: str):
         logger.info(f"Number of messages from producer: {producer_collection.count_documents({})}")
         assert consumer_collection.count_documents({}) > 0
         assert producer_collection.count_documents({}) > 0
-
         cursor = consumer_collection.find({})
         for document in cursor:
             consumed_messages.append((document["origin"], document["content"]))
@@ -75,11 +75,6 @@ async def fetch_action_get_credentials(unit: Unit) -> Dict:
     action = await unit.run_action(action_name="get-credentials")
     result = await action.wait()
     return result.results
-
-
-def get_random_topic() -> str:
-    """Return a random topic name."""
-    return f"topic-{''.join(random.choices(string.ascii_lowercase, k=4))}"
 
 
 async def kubectl_delete(ops_test: OpsTest, unit: ops.model.Unit, wait: bool = True) -> None:
@@ -134,7 +129,7 @@ async def get_address(ops_test: OpsTest, app_name, unit_num=0) -> str:
     return address
 
 
-def get_action_parameters(credentials: Dict[str, str], topic_name: str):
+def get_action_parameters(credentials: dict, topic_name: str):
     """Construct parameter dictionary needed to stark consumer/producer with the action."""
     logger.info(f"Credentials: {credentials}")
     assert "kafka" in credentials
@@ -156,7 +151,6 @@ async def fetch_action_start_process(unit: Unit, action_params: Dict[str, str]) 
         unit: the target unit.
         action_params: A dictionary that contains all commands parameters.
 
-
     Returns:
         A dictionary with the result of the action.
     """
@@ -171,10 +165,63 @@ async def fetch_action_stop_process(unit: Unit) -> Dict:
     Args:
         unit: the target unit.
 
-
     Returns:
         A dictionary with the result of the action.
     """
     action = await unit.run_action(action_name="stop-process")
     result = await action.wait()
     return result.results
+
+
+def get_random_topic() -> str:
+    """Return a random topic name."""
+    return f"topic-{''.join(random.choices(string.ascii_lowercase, k=4))}"
+
+
+def create_topic(model_full_name: str, app_name: str, topic: str) -> None:
+    try:
+        check_output(
+            f"JUJU_MODEL={model_full_name} juju ssh {app_name}/0 sudo -i 'charmed-kafka.topics --create --topic {topic} --bootstrap-server localhost:19092 "
+            f"--command-config /var/snap/charmed-kafka/current/etc/kafka/client.properties'",
+            stderr=STDOUT,
+            shell=True,
+            universal_newlines=True,
+        )
+
+    except CalledProcessError as e:
+        logger.error(f"command '{e.cmd}' return with error (code {e.returncode}): {e.output}")
+        raise
+
+
+def write_topic_message_size_config(
+    model_full_name: str, app_name: str, topic: str, size: int
+) -> None:
+    try:
+        result = check_output(
+            f"JUJU_MODEL={model_full_name} juju ssh {app_name}/0 sudo -i 'charmed-kafka.configs --bootstrap-server localhost:19092 "
+            f"--entity-type topics --entity-name {topic} --alter --add-config max.message.bytes={size} --command-config /var/snap/charmed-kafka/current/etc/kafka/client.properties'",
+            stderr=STDOUT,
+            shell=True,
+            universal_newlines=True,
+        )
+
+    except CalledProcessError as e:
+        logger.error(f"command '{e.cmd}' return with error (code {e.returncode}): {e.output}")
+        raise
+    assert f"Completed updating config for topic {topic}." in result
+
+
+def read_topic_config(model_full_name: str, app_name: str, topic: str) -> str:
+    try:
+        result = check_output(
+            f"JUJU_MODEL={model_full_name} juju ssh {app_name}/0 sudo -i 'charmed-kafka.configs --bootstrap-server localhost:19092 "
+            f"--entity-type topics --entity-name {topic} --describe --command-config /var/snap/charmed-kafka/current/etc/kafka/client.properties'",
+            stderr=PIPE,
+            shell=True,
+            universal_newlines=True,
+        )
+
+    except CalledProcessError as e:
+        logger.error(f"command '{e.cmd}' return with error (code {e.returncode}): {e.output}")
+        raise
+    return result
