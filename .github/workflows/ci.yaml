@@ -11,7 +11,7 @@ on:
   workflow_call:
   pull_request:
   schedule:
-    - cron: '53 0 * * *' # Daily at 00:53 UTC
+    - cron: "53 0 * * *" # Daily at 00:53 UTC
 
 jobs:
   lint:
@@ -40,6 +40,7 @@ jobs:
           - integration-bundle
           - integration-e2e
           - integration-e2e-tls
+          - integration-e2e-backup
         juju:
           - snap_channel: "3.4/stable"
             agent: "3.4.2"
