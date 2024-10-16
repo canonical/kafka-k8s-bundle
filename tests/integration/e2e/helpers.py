@@ -12,7 +12,7 @@ import ops
 from juju.unit import Unit
 from pymongo import MongoClient
 from pytest_operator.plugin import OpsTest
-from tests.integration.e2e.literals import SUBSTRATE
+from tests.integration.e2e.literals import KAFKA_INTERNAL_PORT, SUBSTRATE
 
 logger = logging.getLogger()
 
@@ -208,7 +208,7 @@ def create_topic(model_full_name: str, app_name: str, topic: str) -> None:
     try:
         check_output(
             f"JUJU_MODEL={model_full_name} juju ssh {args.container_arg} {app_name}/leader {args.sudo_arg} "
-            f"'{args.bin_cmd.format(sub='topics')} --create --topic {topic} --bootstrap-server localhost:19092 "
+            f"'{args.bin_cmd.format(sub='topics')} --create --topic {topic} --bootstrap-server localhost:{KAFKA_INTERNAL_PORT} "
             f"--command-config {args.config_file}'",
             stderr=STDOUT,
             shell=True,
@@ -235,7 +235,7 @@ def write_topic_message_size_config(
     try:
         result = check_output(
             f"JUJU_MODEL={model_full_name} juju ssh {args.container_arg} {app_name}/leader {args.sudo_arg} "
-            f"'{args.bin_cmd.format(sub='configs')} --bootstrap-server localhost:19092 "
+            f"'{args.bin_cmd.format(sub='configs')} --bootstrap-server localhost:{KAFKA_INTERNAL_PORT} "
             f"--entity-type topics --entity-name {topic} --alter --add-config max.message.bytes={size} --command-config {args.config_file}'",
             stderr=STDOUT,
             shell=True,
@@ -260,7 +260,7 @@ def read_topic_config(model_full_name: str, app_name: str, topic: str) -> str:
     try:
         result = check_output(
             f"JUJU_MODEL={model_full_name} juju ssh {args.container_arg} {app_name}/leader {args.sudo_arg} "
-            f"'{args.bin_cmd.format(sub='configs')} --bootstrap-server localhost:19092 "
+            f"'{args.bin_cmd.format(sub='configs')} --bootstrap-server localhost:{KAFKA_INTERNAL_PORT} "
             f"--entity-type topics --entity-name {topic} --describe --command-config {args.config_file}'",
             stderr=PIPE,
             shell=True,
