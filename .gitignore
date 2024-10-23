@@ -1,1 +1,9 @@
-__pycache__
+*.charm
+.tox/
+.coverage
+__pycache__/
+*.py[cod]
+build/
+parts/
+prime/
+stage/
