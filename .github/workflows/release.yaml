@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/ci.yaml
   publish-k8s-bundle:
     name: Publish K8s bundle
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     needs:
       - integration-test
