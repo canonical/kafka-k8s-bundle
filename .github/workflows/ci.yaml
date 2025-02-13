@@ -23,8 +23,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Install tox
         run: pipx install tox
-      - name: Install Poetry
-        run: pipx install "poetry<2.0.0"
       - name: Run linters
         run: make lint
 
