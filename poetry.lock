@@ -1439,6 +1439,25 @@ signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
+name = "ops"
+version = "2.18.1"
+description = "The Python library behind great charms"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "ops-2.18.1-py3-none-any.whl", hash = "sha256:ba0312366e25b3ae90cf4b8d0af6ea6b612d4951500f856bce609cdb25c9bdeb"},
+    {file = "ops-2.18.1.tar.gz", hash = "sha256:5619deb370c00ea851f9579b780a09b88b1a1d020e58e1ed81d31c8fb7b28c8a"},
+]
+
+[package.dependencies]
+PyYAML = "==6.*"
+websocket-client = "==1.*"
+
+[package.extras]
+docs = ["canonical-sphinx-extensions", "furo", "linkify-it-py", "myst-parser", "pyspelling", "sphinx (>=8.0.0,<8.1.0)", "sphinx-autobuild", "sphinx-copybutton", "sphinx-design", "sphinx-notfound-page", "sphinx-tabs", "sphinxcontrib-jquery", "sphinxext-opengraph"]
+testing = ["ops-scenario (>=7.0.5,<8)"]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 description = "Core utilities for Python packages"
@@ -2383,4 +2402,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "52af442a3fb310893136df940da3370bdf358361d7e8902ab477253c4b535be9"
+content-hash = "39af6fac5437ac56c3fb32ba4dc7eac6f893b86d01f8f339d30ccfaf1dd6817f"
