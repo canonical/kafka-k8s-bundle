@@ -4,7 +4,6 @@
 
 """The pytest fixtures to support cmd options for local running and CI/CD."""
 
-import asyncio
 import logging
 import random
 import string
@@ -14,6 +13,7 @@ from zipfile import ZipFile
 import pytest
 import yaml
 from literals import (
+    BUNDLE_BUILD,
     DATABASE_CHARM_NAME,
     INTEGRATOR_CHARM_NAME,
     KAFKA_CHARM_NAME,

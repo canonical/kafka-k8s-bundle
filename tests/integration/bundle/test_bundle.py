@@ -3,9 +3,8 @@
 # See LICENSE file for licensing details.
 
 import asyncio
-from zipfile import ZipFile
 import logging
-from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 import yaml
@@ -83,7 +82,6 @@ async def test_deploy_bundle_active(ops_test: OpsTest, bundle_file, tls):
 async def test_active_zookeeper(ops_test: OpsTest):
     """Test the status the correct status of Zookeeper."""
     assert await ping_servers(ops_test, ZOOKEEPER)
-
 
 
 @pytest.mark.abort_on_fail

@@ -13,7 +13,7 @@ lint:
 build: clean lint
 	mkdir -p $(BUILD_DIRECTORY)
 
-    TLS=$(TLS) BUILD_DIRECTORY=$(BUILD_DIRECTORY) FOLDER=$(FOLDER) tox -e render
+	TLS=$(TLS) BUILD_DIRECTORY=$(BUILD_DIRECTORY) FOLDER=$(FOLDER) tox -e render
 
 	cd $(BUILD_DIRECTORY) && charmcraft pack --destructive-mode
 
