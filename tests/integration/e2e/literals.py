@@ -5,6 +5,7 @@
 """Collection of globals common to the Kafka bundle."""
 
 INTEGRATOR_CHARM_NAME = "data-integrator"
+BUNDLE_BUILD = "build/kafka-bundle.zip"
 TLS_CHARM_NAME = "self-signed-certificates"
 KAFKA_CHARM_NAME = "kafka-k8s"
 ZOOKEEPER_CHARM_NAME = "zookeeper-k8s"

@@ -2,24 +2,27 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-
-import pytest
-from pytest_operator.plugin import OpsTest
+from literals import BUNDLE_BUILD
 
 
-@pytest.fixture
-def ops_test(ops_test: OpsTest) -> OpsTest:
-    # if os.environ.get("CI") == "true":
-    #     # Running in GitHub Actions; skip build step
-    #     # (GitHub Actions uses a separate, cached build step. See .github/workflows/ci.yaml)
-    #     packed_charms = json.loads(os.environ["CI_PACKED_CHARMS"])
+def pytest_addoption(parser):
+    """Defines pytest parsers."""
+    parser.addoption("--tls", action="store_true", help="set tls for e2e tests")
 
-    #     async def build_charm(charm_path, bases_index: int = None) -> Path:
-    #         for charm in packed_charms:
-    #             if Path(charm_path) == Path(charm["directory_path"]):
-    #                 if bases_index is None or bases_index == charm["bases_index"]:
-    #                     return charm["file_path"]
-    #         raise ValueError(f"Unable to find .charm file for {bases_index=} at {charm_path=}")
+    parser.addoption(
+        "--bundle-file",
+        action="store",
+        help="name of the bundle zip when provided.",
+        default=BUNDLE_BUILD,
+    )
 
-    #     ops_test.build_charm = build_charm
-    return ops_test
+
+def pytest_generate_tests(metafunc):
+    """Processes pytest parsers."""
+    tls = metafunc.config.option.tls
+    if "tls" in metafunc.fixturenames:
+        metafunc.parametrize("tls", [bool(tls)], scope="module")
+
+    bundle_file = metafunc.config.option.bundle_file
+    if "bundle_file" in metafunc.fixturenames:
+        metafunc.parametrize("bundle_file", [bundle_file], scope="module")
