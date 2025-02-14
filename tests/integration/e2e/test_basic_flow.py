@@ -198,7 +198,6 @@ async def test_test_app_actually_set_up(
         apps=[producer], idle_period=30, status="blocked", timeout=600
     )
 
-
     # Then stop consumers
     await ops_test.model.applications[consumer].remove_relation(
         f"{consumer}:kafka-cluster", f"{kafka}"
