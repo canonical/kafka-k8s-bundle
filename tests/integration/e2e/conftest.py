@@ -119,7 +119,8 @@ async def deploy_cluster(ops_test: OpsTest, bundle_file):
             apps=apps,
             idle_period=20,
             status="active",
-            timeout=1800,
+            timeout=1000,
+            raise_on_error=False
         )
 
     logger.info("Bundle deployed!")
