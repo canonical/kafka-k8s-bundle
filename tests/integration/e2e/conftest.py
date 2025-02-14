@@ -111,7 +111,6 @@ async def deploy_cluster(ops_test: OpsTest, bundle_file):
     with ZipFile(bundle_file) as fp:
         bundle = yaml.safe_load(fp.read("bundle.yaml"))
 
-
     apps = list(bundle["applications"].keys())
     logger.info(f"Applications: {','.join(apps)}")
 
@@ -123,8 +122,7 @@ async def deploy_cluster(ops_test: OpsTest, bundle_file):
             timeout=1800,
         )
 
-    logger.info(f"Bundle deployed!")
-
+    logger.info("Bundle deployed!")
 
 
 @pytest.fixture(scope="function")
