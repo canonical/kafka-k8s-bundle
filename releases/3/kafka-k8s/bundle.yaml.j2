@@ -4,8 +4,8 @@ applications:
     charm: kafka-k8s
     constraints: arch=amd64
     resources:
-      kafka-image: 46
-    revision: 71
+      kafka-image: 49
+    revision: 78
     scale: 1
 {%- if tls %}
   self-signed-certificates:
@@ -22,8 +22,8 @@ applications:
     charm: zookeeper-k8s
     constraints: arch=amd64
     resources:
-      zookeeper-image: 31
-    revision: 66
+      zookeeper-image: 34
+    revision: 76
     scale: 3
 bundle: kubernetes
 description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, supported
