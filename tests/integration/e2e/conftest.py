@@ -116,11 +116,7 @@ async def deploy_cluster(ops_test: OpsTest, bundle_file):
 
     async with ops_test.fast_forward(fast_interval="30s"):
         await ops_test.model.wait_for_idle(
-            apps=apps,
-            idle_period=20,
-            status="active",
-            timeout=1000,
-            raise_on_error=False
+            apps=apps, idle_period=20, status="active", timeout=1000, raise_on_error=False
         )
 
     logger.info("Bundle deployed!")
