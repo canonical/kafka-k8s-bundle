@@ -107,6 +107,8 @@ async def deploy_cluster(ops_test: OpsTest, bundle_file):
     retcode, stdout, stderr = await ops_test.run(
         *["juju", "deploy", "--trust", "-m", ops_test.model_full_name, f"./{bundle_file}"]
     )
+    assert retcode == 0, f"Deploy failed: {(stderr or stdout).strip()}"
+    logger.info(stdout)
 
     with ZipFile(bundle_file) as fp:
         bundle = yaml.safe_load(fp.read("bundle.yaml"))
