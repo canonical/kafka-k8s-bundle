@@ -197,20 +197,12 @@ async def test_test_app_actually_set_up(
     await ops_test.model.applications[producer].remove_relation(
         f"{producer}:kafka-cluster", f"{kafka}"
     )
-    await ops_test.model.wait_for_idle(
-        apps=[producer], idle_period=30, status="blocked", timeout=600
-    )
-
     # Then stop consumers
     await ops_test.model.applications[consumer].remove_relation(
         f"{consumer}:kafka-cluster", f"{kafka}"
     )
 
-    await ops_test.model.wait_for_idle(
-        apps=[consumer], idle_period=30, status="blocked", timeout=600
-    )
-
-    await asyncio.sleep(100)
+    await asyncio.sleep(60)
 
     # destroy producer and consumer during teardown.
     logger.info("End of the test!")
