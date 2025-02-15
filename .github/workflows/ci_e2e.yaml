@@ -41,7 +41,7 @@ jobs:
           #   agent: "3.4.2"
           - snap_channel: "3.6/stable"
             agent: "3.6.0"
-    name: ${{ matrix.tox-environments }}-${{matrix.options}}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
+    name: ${{ matrix.tox-environments }}_${{matrix.tls}}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
     needs:
       - lint
     # runs-on: ["self-hosted", "linux", "X64", "jammy", "large"]
