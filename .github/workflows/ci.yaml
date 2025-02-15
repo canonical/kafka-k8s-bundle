@@ -85,10 +85,10 @@ jobs:
           fi
       - name: Run integration tests
         run: | 
-          if [[ "${{ matrix.tls }}" == "true" ]]; then
-            FLAGS="${{matrix.options}} --tls"
+          if [[ "${{ matrix.tests.tls }}" == "true" ]]; then
+            FLAGS="--tls"
           else
-            FLAGS="${{matrix.options}}"
+            FLAGS=""
           fi
 
           make build TLS=${{ matrix.tests.tls }}
