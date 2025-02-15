@@ -35,11 +35,11 @@ jobs:
           - tox-environment: integration-bundle
             tls: "true"
           - tox-environment: integration-e2e
-            tls: ""
+            tls: "false"
           - tox-environment: integration-e2e
             tls: "true"
           - tox-environment: integration-e2e-backup
-            tls: ""
+            tls: "false"
         juju:
           - snap_channel: "3.4/stable"
             agent: "3.4.2"
@@ -85,12 +85,12 @@ jobs:
           fi
       - name: Run integration tests
         run: | 
-          if [ -z "${{ matrix.tests.tls }}" ]; then
-            FLAGS=""
+          if [[ "${{ matrix.tls }}" == "true" ]]; then
+            FLAGS="${{matrix.options}} --tls"
           else
-            FLAGS="--tls"
+            FLAGS="${{matrix.options}}"
           fi
-          
+
           make build TLS=${{ matrix.tests.tls }}
           echo "======================"
           echo "Bundle being deployed:"

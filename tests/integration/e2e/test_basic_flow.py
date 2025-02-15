@@ -12,6 +12,7 @@ from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
     fetch_action_start_process,
+    fetch_action_stop_process,
     get_action_parameters,
     get_address,
     get_random_topic,
@@ -194,15 +195,24 @@ async def test_test_app_actually_set_up(
     logger.info("End scale down")
 
     # Stop producers first
-    await ops_test.model.applications[producer].remove_relation(
-        f"{producer}:kafka-cluster", f"{kafka}"
-    )
-    # Then stop consumers
-    await ops_test.model.applications[consumer].remove_relation(
-        f"{consumer}:kafka-cluster", f"{kafka}"
-    )
+    if integrator:
+        await fetch_action_stop_process(ops_test.model.applications[producer].units[0])
+    else:
+        await ops_test.model.applications[producer].remove_relation(
+            f"{producer}:kafka-cluster", f"{kafka}"
+        )
 
-    await asyncio.sleep(60)
+    await asyncio.sleep(10)
+
+    # Then stop consumers
+    if integrator:
+        await fetch_action_stop_process(ops_test.model.applications[consumer].units[0])
+    else:
+        await ops_test.model.applications[consumer].remove_relation(
+            f"{consumer}:kafka-cluster", f"{kafka}"
+        )
+
+    await asyncio.sleep(30)
 
     # destroy producer and consumer during teardown.
     logger.info("End of the test!")

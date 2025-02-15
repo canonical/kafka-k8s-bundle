@@ -31,7 +31,7 @@ jobs:
           - integration-e2e-basic-flow
           # - integration-e2e-password-rotation
         tls:
-          -
+          - false
           - true
         options:
           -
@@ -82,10 +82,10 @@ jobs:
           fi
       - name: Run integration e2e tests
         run: |
-          if [ -z "${{ matrix.tls }}" ]; then
-            FLAGS="${{matrix.options}}"
-          else
+          if [[ "${{ matrix.tls }}" == "true" ]]; then
             FLAGS="${{matrix.options}} --tls"
+          else
+            FLAGS="${{matrix.options}}"
           fi
           
           make build TLS=${{ matrix.tls }}

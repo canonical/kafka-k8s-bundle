@@ -7,7 +7,7 @@ applications:
       kafka-image: 49
     revision: 78
     scale: 1
-{%- if tls %}
+{%- if tls == "true" %}
   self-signed-certificates:
     channel: latest/stable
     charm: self-signed-certificates
@@ -31,7 +31,7 @@ description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, suppo
 issues: https://github.com/canonical/kafka-k8s-bundle/issues/new
 name: kafka-k8s-bundle
 relations:
-{%- if tls +%}
+{%- if tls == "true" +%}
 - - zookeeper-k8s:certificates
   - self-signed-certificates:certificates
 - - kafka-k8s:certificates
