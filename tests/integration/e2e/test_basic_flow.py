@@ -12,9 +12,11 @@ from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
     fetch_action_start_process,
+    fetch_action_stop_process,
     get_action_parameters,
     get_address,
     get_random_topic,
+    scale_application,
 )
 
 logger = logging.getLogger(__name__)
@@ -177,18 +179,40 @@ async def test_test_app_actually_set_up(
 
     # skip scale down for the moment due the scale down bug in juju: https://bugs.launchpad.net/juju/+bug/1977582
 
-    # logger.info("Scale down consumer")
-    # res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[2])
-    # logger.info(f"Res: {res}")
-    # await scale_application(ops_test,application_name=consumer,desired_count=2)
-    # res = await kubectl_delete(ops_test, ops_test.model.applications[consumer].units[1])
-    # await scale_application(ops_test,application_name=consumer,desired_count=1)
-    # logger.info(f"Res: {res}")
-    # await ops_test.model.block_until(
-    #     lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
-    # )
-    # await ops_test.model.wait_for_idle(apps=[consumer], status="active", timeout=1000)
-    # logger.info("End scale down")
+    logger.info("Scale down")
+    await scale_application(ops_test, application_name=producer, desired_count=1)
+    await scale_application(ops_test, application_name=consumer, desired_count=1)
+
+    await ops_test.model.block_until(
+        lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
+    )
+    await ops_test.model.block_until(
+        lambda: len(ops_test.model.applications[producer].units) == 1, timeout=1000
+    )
+
+    await ops_test.model.wait_for_idle(apps=[consumer, producer], status="active", timeout=1000)
+
+    logger.info("End scale down")
+
+    # Stop producers first
+    if integrator:
+        await fetch_action_stop_process(ops_test.model.applications[producer].units[0])
+    else:
+        await ops_test.model.applications[producer].remove_relation(
+            f"{producer}:kafka-cluster", f"{kafka}"
+        )
+
+    await asyncio.sleep(10)
+
+    # Then stop consumers
+    if integrator:
+        await fetch_action_stop_process(ops_test.model.applications[consumer].units[0])
+    else:
+        await ops_test.model.applications[consumer].remove_relation(
+            f"{consumer}:kafka-cluster", f"{kafka}"
+        )
+
+    await asyncio.sleep(30)
 
     # destroy producer and consumer during teardown.
     logger.info("End of the test!")

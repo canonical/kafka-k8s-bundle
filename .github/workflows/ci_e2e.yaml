@@ -1,17 +1,13 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: Tests
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+name: Tests (End-to-End)
 
 on:
+  pull_request:
   workflow_dispatch:
   workflow_call:
-  pull_request:
   schedule:
-    - cron: "53 0 * * *" # Daily at 00:53 UTC
+    - cron: "53 0 * * SAT" # Every Saturday at 00:53 UTC
 
 jobs:
   lint:
@@ -26,28 +22,29 @@ jobs:
       - name: Run linters
         run: make lint
 
-  integration-test:
+  e2e-tests:
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix:
-        tests:
-          - tox-environment: integration-bundle
-            tls: "true"
-          - tox-environment: integration-e2e
-            tls: "false"
-          - tox-environment: integration-e2e
-            tls: "true"
-          - tox-environment: integration-e2e-backup
-            tls: "false"
+        tox-environments:
+          - integration-e2e-basic-flow
+          - integration-e2e-password-rotation
+        tls:
+          - false
+          - true
+        options:
+          -
+          - --integrator
         juju:
           - snap_channel: "3.4/stable"
             agent: "3.4.2"
           - snap_channel: "3.6/stable"
             agent: "3.6.0"
-    name: ${{ matrix.tests.tox-environment }}_${{ matrix.tests.tls }}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
+    name: ${{ matrix.tox-environments }}_${{matrix.tls}}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
     needs:
       - lint
+    # runs-on: ["self-hosted", "linux", "X64", "jammy", "large"]
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
@@ -83,18 +80,18 @@ jobs:
             echo Skipping unstable tests
             echo "mark_expression=not unstable" >> $GITHUB_OUTPUT
           fi
-      - name: Run integration tests
-        run: | 
-          if [[ "${{ matrix.tests.tls }}" == "true" ]]; then
-            FLAGS="--tls"
+      - name: Run integration e2e tests
+        run: |
+          if [[ "${{ matrix.tls }}" == "true" ]]; then
+            FLAGS="${{matrix.options}} --tls"
           else
-            FLAGS=""
+            FLAGS="${{matrix.options}}"
           fi
-
-          make build TLS=${{ matrix.tests.tls }}
+          
+          make build TLS=${{ matrix.tls }}
           echo "======================"
           echo "Bundle being deployed:"
           echo "======================"
           cat build/bundle.yaml
           echo "======================"
-          tox run -e ${{ matrix.tests.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' $FLAGS
+          tox run -e ${{ matrix.tox-environments }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' $FLAGS

@@ -4,7 +4,7 @@
 
 import asyncio
 import logging
-from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 import yaml
@@ -20,7 +20,6 @@ from tests.integration.bundle.helpers import (
     ping_servers,
 )
 from tests.integration.bundle.literals import (
-    BUNDLE_PATH,
     CLIENT_CHARM_NAME,
     KAFKA,
     TLS_CHARM_NAME,
@@ -41,22 +40,42 @@ def usernames():
 
 
 @pytest.mark.abort_on_fail
-async def test_deploy_bundle_active(ops_test: OpsTest):
+async def test_verify_tls_flags_consistency(ops_test: OpsTest, bundle_file, tls):
     """Deploy the bundle."""
-    bundle_data = yaml.safe_load(Path(BUNDLE_PATH).read_text())
+    with ZipFile(bundle_file) as fp:
+        bundle_data = yaml.safe_load(fp.read("bundle.yaml"))
+
     applications = []
 
+    bundle_tls = False
     for app in bundle_data["applications"]:
         applications.append(app)
+        if TLS_CHARM_NAME in app:
+            bundle_tls = True
 
+    assert tls == bundle_tls
+
+
+@pytest.mark.abort_on_fail
+async def test_deploy_bundle_active(ops_test: OpsTest, bundle_file, tls):
+    """Deploy the bundle."""
+    logger.info(f"Deploying Bundle with file {bundle_file}")
     retcode, stdout, stderr = await ops_test.run(
-        *["juju", "deploy", "--trust", "-m", ops_test.model_full_name, f"./{BUNDLE_PATH}"]
+        *["juju", "deploy", "--trust", "-m", ops_test.model_full_name, f"./{bundle_file}"]
     )
     assert retcode == 0, f"Deploy failed: {(stderr or stdout).strip()}"
     logger.info(stdout)
-    await ops_test.model.wait_for_idle(timeout=2000, idle_period=30, status="active")
-    for app in applications:
-        assert ops_test.model.applications[app].status == "active"
+
+    with ZipFile(bundle_file) as fp:
+        bundle = yaml.safe_load(fp.read("bundle.yaml"))
+
+    async with ops_test.fast_forward(fast_interval="30s"):
+        await ops_test.model.wait_for_idle(
+            apps=list(bundle["applications"].keys()),
+            idle_period=10,
+            status="active",
+            timeout=1800,
+        )
 
 
 @pytest.mark.abort_on_fail
@@ -66,16 +85,12 @@ async def test_active_zookeeper(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-async def test_deploy_app_charm_relate(ops_test: OpsTest):
+async def test_deploy_app_charm_relate(ops_test: OpsTest, bundle_file, tls):
     """Deploy dummy app and relate with Kafka and TLS operator."""
-    bundle_data = yaml.safe_load(Path(BUNDLE_PATH).read_text())
-    applications = []
+    with ZipFile(bundle_file) as fp:
+        bundle_data = yaml.safe_load(fp.read("bundle.yaml"))
 
-    tls = False
-    for app in bundle_data["applications"]:
-        applications.append(app)
-        if TLS_CHARM_NAME in app:
-            tls = True
+    applications = list(bundle_data["applications"].keys())
 
     config = {"role": "producer", "topic_name": TOPIC, "num_messages": 50}
     await ops_test.model.deploy(

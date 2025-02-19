@@ -4,7 +4,7 @@
 
 """Collection of globals common to the Kafka bundle."""
 
-BUNDLE_PATH = "releases/3/kafka-k8s/bundle.yaml"
+BUNDLE_BUILD = "build/kafka-k8s-bundle.zip"
 APP_CHARM_PATH = "tests/integration/bundle/app-charm"
 ZOOKEEPER = "zookeeper-k8s"
 KAFKA = "kafka-k8s"
