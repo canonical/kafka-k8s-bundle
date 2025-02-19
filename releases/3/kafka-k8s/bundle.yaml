@@ -5,7 +5,7 @@ applications:
     constraints: arch=amd64
     resources:
       kafka-image: 46
-    revision: 71
+    revision: 78
     scale: 1
   self-signed-certificates:
     channel: latest/stable
@@ -21,7 +21,7 @@ applications:
     constraints: arch=amd64
     resources:
       zookeeper-image: 31
-    revision: 66
+    revision: 76
     scale: 3
 bundle: kubernetes
 description: A fast, secure and fault-tolerant Apache Kafka on Kubernetes, supported
