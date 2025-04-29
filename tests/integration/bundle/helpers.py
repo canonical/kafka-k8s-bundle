@@ -7,8 +7,8 @@ import re
 from subprocess import PIPE, CalledProcessError, check_output
 from typing import Any, Dict, List, Set, Tuple
 
+import jubilant
 import yaml
-from pytest_operator.plugin import OpsTest
 from tests.integration.bundle.literals import BINARIES_PATH, CONF_PATH
 
 from .auth import Acl, KafkaAuth
@@ -259,19 +259,14 @@ def srvr(host: str) -> Dict:
     return result
 
 
-async def get_address(ops_test: OpsTest, app_name: str, unit_num: str) -> str:
+def get_address(status: jubilant.Status, app_name: str, unit_num: str) -> str:
     """Get the address for a unit."""
-    status = await ops_test.model.get_status()  # noqa: F821
-    address = status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["address"]
+    address = status.apps[app_name].units[f"{app_name}/{unit_num}"].address
     return address
 
 
-async def ping_servers(ops_test: OpsTest, zookeeper_app_name: str) -> bool:
-    for unit in ops_test.model.applications[zookeeper_app_name].units:
-        host = await get_address(
-            ops_test, app_name=zookeeper_app_name, unit_num=unit.name.split("/")[-1]
-        )
-        assert host
+def ping_servers(unit_ips: list[str]) -> bool:
+    for host in unit_ips:
         mode = srvr(host)["Mode"]
         if mode not in ["leader", "follower"]:
             return False

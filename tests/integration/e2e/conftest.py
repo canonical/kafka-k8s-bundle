@@ -7,11 +7,10 @@
 import logging
 import random
 import string
-from typing import Dict, Literal, Optional
-from zipfile import ZipFile
+from typing import Dict, Generator, Literal, Optional, cast
 
+import jubilant
 import pytest
-import yaml
 from literals import (
     BUNDLE_BUILD,
     DATABASE_CHARM_NAME,
@@ -21,7 +20,6 @@ from literals import (
     TLS_CHARM_NAME,
     ZOOKEEPER_CHARM_NAME,
 )
-from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +60,21 @@ def pytest_addoption(parser):
         default=BUNDLE_BUILD,
     )
 
+    parser.addoption(
+        "--model",
+        action="store",
+        help="Juju model to use; if not provided, a new model "
+        "will be created for each test which requires one",
+        default=None,
+    )
+
+    parser.addoption(
+        "--keep-models",
+        action="store_true",
+        default=False,
+        help="keep temporarily-created models",
+    )
+
 
 def pytest_generate_tests(metafunc):
     """Processes pytest parsers."""
@@ -98,41 +111,55 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture(scope="module")
-async def deploy_cluster(ops_test: OpsTest, bundle_file):
+def juju(request: pytest.FixtureRequest) -> Generator[jubilant.Juju, None, None]:
+    """Pytest fixture that wraps :meth:`jubilant.with_model`.
+
+    This adds command line parameter ``--keep-models`` (see help for details).
+    """
+    model = request.config.getoption("--model")
+    keep_models = cast(bool, request.config.getoption("--keep-models"))
+
+    if model is None:
+        with jubilant.temp_model(keep=keep_models) as juju:
+            yield juju
+            log = juju.debug_log(limit=1000)
+    else:
+        juju = jubilant.Juju(model=model)
+        yield juju
+        log = juju.debug_log(limit=1000)
+
+    if request.session.testsfailed:
+        print(log, end="")
+
+
+@pytest.fixture(scope="module")
+def deploy_cluster(juju: jubilant.Juju, bundle_file):
     """Fixture for deploying Kafka+ZK clusters."""
-    if not ops_test.model:  # avoids a multitude of linting errors
+    if not juju.model:  # avoids a multitude of linting errors
         raise RuntimeError("model not set")
 
+    juju.cli("model-config", "update-status-hook-interval=2m")
     logger.info(f"Deploying Bundle with file {bundle_file}")
-    retcode, stdout, stderr = await ops_test.run(
-        *["juju", "deploy", "--trust", "-m", ops_test.model_full_name, f"./{bundle_file}"]
+    stdout = juju.cli(
+        *["deploy", "--trust", "-m", juju.model, f"./{bundle_file}"], include_model=False
     )
-    assert retcode == 0, f"Deploy failed: {(stderr or stdout).strip()}"
+    juju.trust(KAFKA_CHARM_NAME, scope="cluster")
     logger.info(stdout)
 
-    with ZipFile(bundle_file) as fp:
-        bundle = yaml.safe_load(fp.read("bundle.yaml"))
-
-    apps = list(bundle["applications"].keys())
-    logger.info(f"Applications: {','.join(apps)}")
-
-    async with ops_test.fast_forward(fast_interval="60s"):
-        await ops_test.model.wait_for_idle(
-            apps=apps, idle_period=30, status="active", timeout=1800, raise_on_error=False
-        )
+    juju.wait(lambda status: jubilant.all_active(status), timeout=1800)
 
     logger.info("Bundle deployed!")
 
 
-@pytest.fixture(scope="function")
-async def deploy_data_integrator(ops_test: OpsTest, kafka):
+@pytest.fixture(scope="module")
+def deploy_data_integrator(juju: jubilant.Juju, kafka):
     """Factory fixture for deploying + tearing down client applications."""
     # tracks deployed app names for teardown later
     apps = []
 
-    async def _deploy_data_integrator(config: Dict[str, str]):
+    def _deploy_data_integrator(config: Dict[str, str]):
         """Deploys client with specified role and uuid."""
-        if not ops_test.model:  # avoids a multitude of linting errors
+        if not juju.model:  # avoids a multitude of linting errors
             raise RuntimeError("model not set")
 
         # uuid to avoid name clashes for same applications
@@ -141,15 +168,19 @@ async def deploy_data_integrator(ops_test: OpsTest, kafka):
         apps.append(generated_app_name)
 
         logger.info(f"{generated_app_name=} - {apps=}")
-        await ops_test.model.deploy(
+        juju.deploy(
             INTEGRATOR_CHARM_NAME,
-            application_name=generated_app_name,
+            app=generated_app_name,
             num_units=1,
-            series="jammy",
             channel="edge",
             config=config,
         )
-        await ops_test.model.wait_for_idle(apps=[generated_app_name])
+        juju.wait(
+            lambda status: status.apps[generated_app_name]
+            .units[f"{generated_app_name}/0"]
+            .is_blocked,
+            timeout=3600,
+        )
 
         return generated_app_name
 
@@ -159,25 +190,25 @@ async def deploy_data_integrator(ops_test: OpsTest, kafka):
     logger.info(f"tearing down {apps}")
     for app in apps:
         logger.info(f"tearing down {app}")
-        await ops_test.model.applications[app].remove()
+        juju.remove_application(app)
 
-    await ops_test.model.wait_for_idle(apps=[kafka], idle_period=30, status="active", timeout=1800)
+    juju.wait(lambda status: status.apps[kafka].is_active, timeout=1800, delay=10)
 
 
 @pytest.fixture(scope="function")
-async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
+def deploy_test_app(juju: jubilant.Juju, kafka, certificates, tls):
     """Factory fixture for deploying + tearing down client applications."""
     # tracks deployed app names for teardown later
     apps = []
 
-    async def _deploy_test_app(
+    def _deploy_test_app(
         role: Literal["producer", "consumer"],
         topic_name: str = "test-topic",
         consumer_group_prefix: Optional[str] = None,
         num_messages: int = 1500,
     ):
         """Deploys client with specified role and uuid."""
-        if not ops_test.model:  # avoids a multitude of linting errors
+        if not juju.model:  # avoids a multitude of linting errors
             raise RuntimeError("model not set")
 
         # uuid to avoid name clashes for same applications
@@ -192,57 +223,53 @@ async def deploy_test_app(ops_test: OpsTest, kafka, certificates, tls):
         if consumer_group_prefix:
             config["consumer_group_prefix"] = consumer_group_prefix
 
-        await ops_test.model.deploy(
+        # todo substitute with the published charm
+        juju.deploy(
             KAFKA_TEST_APP_CHARM_NAME,
-            application_name=generated_app_name,
+            app=generated_app_name,
             num_units=1,
-            series="jammy",
             channel="edge",
             config=config,
         )
-        await ops_test.model.wait_for_idle(
-            apps=[generated_app_name], idle_period=20, status="active"
-        )
+        juju.wait(lambda status: status.apps[generated_app_name].is_active, timeout=3600, delay=10)
 
         # Relate with TLS operator
         if tls:
-            await ops_test.model.add_relation(generated_app_name, certificates)
-            await ops_test.model.wait_for_idle(
-                apps=[generated_app_name, certificates],
-                idle_period=30,
-                status="active",
+            juju.integrate(generated_app_name, certificates)
+            juju.wait(
+                lambda status: jubilant.all_active(
+                    status, apps=[generated_app_name, certificates]
+                ),
                 timeout=1800,
+                delay=10,
             )
 
         # Relate with MongoDB
-        await ops_test.model.add_relation(generated_app_name, DATABASE_CHARM_NAME)
-        await ops_test.model.wait_for_idle(
-            apps=[generated_app_name, DATABASE_CHARM_NAME],
-            idle_period=30,
-            status="active",
+        juju.integrate(generated_app_name, DATABASE_CHARM_NAME)
+        juju.wait(
+            lambda status: jubilant.all_active(
+                status, apps=[generated_app_name, DATABASE_CHARM_NAME]
+            ),
             timeout=1800,
+            delay=10,
         )
 
         return generated_app_name
 
     logger.info(f"setting up test_app - current apps {apps}")
+
     yield _deploy_test_app
 
     logger.info(f"tearing down {apps}")
     # stop producers before consumers
     for app in sorted(apps, reverse=True):
         logger.info(f"tearing down {app}")
+        status = juju.status()
         # check if application is in the
-        if app in ops_test.model.applications:
-            await ops_test.model.applications[app].remove_relation(
-                f"{app}:database", f"{DATABASE_CHARM_NAME}"
-            )
-            await ops_test.model.wait_for_idle(apps=[DATABASE_CHARM_NAME, app], idle_period=10)
-            await ops_test.model.applications[app].remove()
-            await ops_test.model.wait_for_idle(
-                apps=[kafka], idle_period=10, status="active", timeout=1800
-            )
+        if app in status.apps.keys():
+            juju.remove_application(app)
+            juju.wait(lambda status: status.apps[kafka].is_active, timeout=1800, delay=5)
         else:
             logger.info(f"App: {app} already removed!")
 
-    await ops_test.model.wait_for_idle(apps=[kafka], idle_period=30, status="active", timeout=1800)
+    juju.wait(lambda status: status.apps[kafka].is_active, timeout=1800, delay=10)

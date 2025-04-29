@@ -2,12 +2,11 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import logging
+import time
 
-import pytest
-from literals import DATABASE_CHARM_NAME, KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME
-from pytest_operator.plugin import OpsTest
+import jubilant
+from literals import DATABASE_CHARM_NAME
 from tests.integration.e2e.helpers import (
     check_produced_and_consumed_messages,
     fetch_action_get_credentials,
@@ -16,6 +15,7 @@ from tests.integration.e2e.helpers import (
     get_action_parameters,
     get_address,
     get_random_topic,
+    jubilant_all_units_idle,
     scale_application,
 )
 
@@ -24,220 +24,198 @@ logger = logging.getLogger(__name__)
 TOPIC = get_random_topic()
 
 
-@pytest.mark.skip_if_deployed
-@pytest.mark.abort_on_fail
-async def test_deploy(ops_test: OpsTest, deploy_cluster):
-    await asyncio.sleep(0)  # do nothing, await deploy_cluster
+def test_deploy(deploy_cluster):
+    time.sleep(1)  # do nothing, wait for deploy_cluster
 
 
-@pytest.mark.abort_on_fail
-async def test_cluster_is_deployed_successfully(
-    ops_test: OpsTest, kafka, zookeeper, tls, certificates
-):
-    assert ops_test.model.applications[kafka].status == "active"
-    assert ops_test.model.applications[zookeeper].status == "active"
+def test_cluster_is_deployed_successfully(juju, kafka, zookeeper, tls, certificates):
+    status = juju.status()
+    assert status.apps[kafka].app_status.current == "active"
+    assert status.apps[zookeeper].app_status.current == "active"
 
     if tls:
-        assert ops_test.model.applications[certificates].status == "active"
+        assert status.apps[certificates].app_status.current == "active"
 
     # deploy MongoDB
 
-    await asyncio.gather(
-        ops_test.model.deploy(
-            DATABASE_CHARM_NAME,
-            application_name=DATABASE_CHARM_NAME,
-            num_units=1,
-            series="jammy",
-            channel="5/edge",
-        ),
+    juju.deploy(
+        DATABASE_CHARM_NAME,
+        app=DATABASE_CHARM_NAME,
+        num_units=1,
+        channel="5/edge",
     )
-    await ops_test.model.wait_for_idle(
-        apps=[KAFKA_CHARM_NAME, ZOOKEEPER_CHARM_NAME, DATABASE_CHARM_NAME],
-        status="active",
+    juju.wait(
+        lambda status: jubilant.all_active(status, apps=[kafka, zookeeper, DATABASE_CHARM_NAME]),
         timeout=1200,
-        idle_period=30,
+        delay=10,
     )
 
 
-@pytest.mark.abort_on_fail
-async def test_test_app_actually_set_up(
-    ops_test: OpsTest, deploy_test_app, deploy_data_integrator, kafka, integrator
+def test_test_app_actually_set_up(
+    juju, deploy_test_app, kafka, deploy_data_integrator, integrator
 ):
+    # consumer and producer params when deploying with data-integrator
     producer_parameters = None
     consumer_parameters = None
     if integrator:
         # deploy integrators and get credentials
-        data_integrator_producer = await deploy_data_integrator(
+        data_integrator_producer = deploy_data_integrator(
             {"topic-name": TOPIC, "extra-user-roles": "producer"}
         )
 
-        await ops_test.model.add_relation(data_integrator_producer, kafka)
-        await ops_test.model.wait_for_idle(
-            apps=[data_integrator_producer, kafka], idle_period=30, status="active", timeout=1800
+        juju.integrate(data_integrator_producer, kafka)
+        juju.wait(
+            lambda status: jubilant.all_active(status, apps=[data_integrator_producer, kafka]),
+            timeout=1800,
+            delay=10,
         )
-
-        producer_credentials = await fetch_action_get_credentials(
-            ops_test.model.applications[data_integrator_producer].units[0]
-        )
+        producer_credentials = fetch_action_get_credentials(juju, data_integrator_producer)
         producer_parameters = get_action_parameters(producer_credentials, TOPIC)
 
-        data_integrator_consumer = await deploy_data_integrator(
+        data_integrator_consumer = deploy_data_integrator(
             {"topic-name": TOPIC, "extra-user-roles": "consumer"}
         )
-        await ops_test.model.add_relation(data_integrator_consumer, kafka)
-        await ops_test.model.wait_for_idle(
-            apps=[data_integrator_consumer, kafka], idle_period=30, status="active", timeout=1800
+        juju.integrate(data_integrator_consumer, kafka)
+        juju.wait(
+            lambda status: jubilant.all_active(status, apps=[data_integrator_consumer, kafka]),
+            timeout=1800,
+            delay=10,
         )
-        consumer_credentials = await fetch_action_get_credentials(
-            ops_test.model.applications[data_integrator_consumer].units[0]
-        )
+        consumer_credentials = fetch_action_get_credentials(juju, data_integrator_consumer)
         consumer_parameters = get_action_parameters(consumer_credentials, TOPIC)
+
         assert producer_parameters != consumer_parameters
 
     # deploy producer and consumer
-
-    producer = await deploy_test_app(role="producer", topic_name=TOPIC)
-    assert ops_test.model.applications[producer].status == "active"
+    producer = deploy_test_app(role="producer", topic_name=TOPIC)
+    assert juju.status().apps[producer].app_status.current == "active"
 
     if integrator:
         # start producer with action
         assert producer_parameters
-        pid = await fetch_action_start_process(
-            ops_test.model.applications[producer].units[0], producer_parameters
-        )
+        pid = fetch_action_start_process(juju, producer, producer_parameters)
         logger.info(f"Producer process started with pid: {pid}")
     else:
         # Relate with Kafka and automatically start producer
-        await ops_test.model.add_relation(producer, kafka)
-        await ops_test.model.wait_for_idle(
-            apps=[producer, kafka], idle_period=30, status="active", timeout=1800
+        juju.integrate(producer, kafka)
+        juju.wait(
+            lambda status: jubilant.all_active(status, apps=[producer, kafka]),
+            timeout=1800,
+            delay=10,
         )
         logger.info(f"Producer {producer} related to Kafka")
 
-    consumer = await deploy_test_app(role="consumer", topic_name=TOPIC)
-    assert ops_test.model.applications[consumer].status == "active"
+    consumer = deploy_test_app(role="consumer", topic_name=TOPIC)
+    assert juju.status().apps[consumer].app_status.current == "active"
 
     if integrator:
         # start consumer with action
         assert consumer_parameters
-        pid = await fetch_action_start_process(
-            ops_test.model.applications[consumer].units[0], consumer_parameters
-        )
+        pid = fetch_action_start_process(juju, consumer, consumer_parameters)
         logger.info(f"Consumer process started with pid: {pid}")
     else:
         # Relate with Kafka and automatically start consumer
-        await ops_test.model.add_relation(consumer, kafka)
-        await ops_test.model.wait_for_idle(
-            apps=[consumer, kafka], idle_period=30, status="active", timeout=1800
+        juju.integrate(consumer, kafka)
+        juju.wait(
+            lambda status: jubilant.all_active(status, apps=[consumer, kafka]),
+            timeout=1800,
+            delay=10,
         )
         logger.info(f"Consumer {consumer} related to Kafka")
 
-    await asyncio.sleep(100)
+    time.sleep(100)
 
     # scale up producer
     logger.info("Scale up producer")
-    await ops_test.model.applications[producer].add_units(count=2)
-    await ops_test.model.block_until(lambda: len(ops_test.model.applications[producer].units) == 3)
-    await ops_test.model.wait_for_idle(
-        apps=[producer], status="active", timeout=1000, idle_period=40
+    juju.add_unit(producer, num_units=2)
+    juju.wait(
+        lambda status: len(status.apps[producer].units) == 3 and status.apps[producer].is_active,
+        timeout=1200,
+        delay=15,
     )
+
     if integrator:
         # start producer process on new units
         assert producer_parameters
-        pid_1 = await fetch_action_start_process(
-            ops_test.model.applications[producer].units[1], producer_parameters
-        )
+        pid_1 = fetch_action_start_process(juju, producer, producer_parameters, unit_num=1)
         logger.info(f"Producer process started with pid: {pid_1}")
-        pid_2 = await fetch_action_start_process(
-            ops_test.model.applications[producer].units[2], producer_parameters
-        )
+        pid_2 = fetch_action_start_process(juju, producer, producer_parameters, unit_num=2)
         logger.info(f"Producer process started with pid: {pid_2}")
 
-    await asyncio.sleep(100)
+    time.sleep(100)
 
-    # scale up consumer
     logger.info("Scale up consumer")
-    await ops_test.model.applications[consumer].add_units(count=2)
-    await ops_test.model.block_until(lambda: len(ops_test.model.applications[consumer].units) == 3)
-    await ops_test.model.wait_for_idle(
-        apps=[consumer], status="active", timeout=1000, idle_period=40
+    juju.add_unit(consumer, num_units=2)
+    juju.wait(
+        lambda status: len(status.apps[consumer].units) == 3 and status.apps[consumer].is_active,
+        timeout=1200,
+        delay=15,
     )
 
     if integrator:
         # start consumer process on new units
         assert consumer_parameters
-        pid_1 = await fetch_action_start_process(
-            ops_test.model.applications[consumer].units[1], consumer_parameters
-        )
+        pid_1 = fetch_action_start_process(juju, consumer, consumer_parameters, unit_num=1)
         logger.info(f"Consumer process started with pid: {pid_1}")
-        pid_2 = await fetch_action_start_process(
-            ops_test.model.applications[consumer].units[2], consumer_parameters
-        )
+        pid_1 = fetch_action_start_process(juju, consumer, consumer_parameters, unit_num=2)
         logger.info(f"Consumer process started with pid: {pid_2}")
 
-    await asyncio.sleep(100)
+    time.sleep(100)
 
     # skip scale down for the moment due the scale down bug in juju: https://bugs.launchpad.net/juju/+bug/1977582
 
     logger.info("Scale down")
-    await scale_application(ops_test, application_name=producer, desired_count=1)
-    await scale_application(ops_test, application_name=consumer, desired_count=1)
+    scale_application(juju, application_name=producer, desired_count=1)
+    scale_application(juju, application_name=consumer, desired_count=1)
 
-    await ops_test.model.block_until(
-        lambda: len(ops_test.model.applications[consumer].units) == 1, timeout=1000
+    juju.wait(
+        lambda status: jubilant_all_units_idle(status, apps=[producer, consumer])
+        and jubilant.all_active(status, apps=[producer, consumer]),
+        timeout=1000,
+        delay=5,
     )
-    await ops_test.model.block_until(
-        lambda: len(ops_test.model.applications[producer].units) == 1, timeout=1000
-    )
-
-    await ops_test.model.wait_for_idle(apps=[consumer, producer], status="active", timeout=1000)
 
     logger.info("End scale down")
 
     # Stop producers first
     if integrator:
-        await fetch_action_stop_process(ops_test.model.applications[producer].units[0])
+        fetch_action_stop_process(juju, producer)
     else:
-        await ops_test.model.applications[producer].remove_relation(
-            f"{producer}:kafka-cluster", f"{kafka}"
-        )
+        juju.remove_relation(f"{producer}:kafka-cluster", f"{kafka}")
 
-    await asyncio.sleep(10)
+    time.sleep(60)
 
     # Then stop consumers
     if integrator:
-        await fetch_action_stop_process(ops_test.model.applications[consumer].units[0])
+        fetch_action_stop_process(juju, consumer)
     else:
-        await ops_test.model.applications[consumer].remove_relation(
-            f"{consumer}:kafka-cluster", f"{kafka}"
-        )
+        juju.remove_relation(f"{consumer}:kafka-cluster", f"{kafka}")
 
-    await asyncio.sleep(30)
+    time.sleep(30)
 
     # destroy producer and consumer during teardown.
     logger.info("End of the test!")
 
 
-@pytest.mark.abort_on_fail
-async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
+def test_consumed_messages(juju: jubilant.Juju, deploy_data_integrator):
 
     # get mongodb credentials
-    mongo_integrator = await deploy_data_integrator({"database-name": TOPIC})
+    mongo_integrator = deploy_data_integrator({"database-name": TOPIC})
 
-    await ops_test.model.add_relation(mongo_integrator, DATABASE_CHARM_NAME)
-    await ops_test.model.wait_for_idle(
-        apps=[mongo_integrator, DATABASE_CHARM_NAME], idle_period=30, status="active", timeout=1800
+    juju.integrate(mongo_integrator, DATABASE_CHARM_NAME)
+    juju.wait(
+        lambda status: jubilant.all_active(status, apps=[mongo_integrator, DATABASE_CHARM_NAME]),
+        timeout=1800,
+        delay=10,
     )
 
-    credentials = await fetch_action_get_credentials(
-        ops_test.model.applications[mongo_integrator].units[0]
-    )
+    credentials = fetch_action_get_credentials(juju, mongo_integrator)
 
     logger.info(f"Credentials: {credentials}")
 
     uris = credentials["mongodb"]["uris"]
 
-    address = await get_address(ops_test=ops_test, app_name=DATABASE_CHARM_NAME)
+    address = get_address(juju, app_name=DATABASE_CHARM_NAME)
 
     hostname = "mongodb-k8s-0.mongodb-k8s-endpoints"
 
@@ -245,7 +223,4 @@ async def test_consumed_messages(ops_test: OpsTest, deploy_data_integrator):
 
     check_produced_and_consumed_messages(uri, TOPIC)
 
-    await ops_test.model.applications[DATABASE_CHARM_NAME].remove()
-    await ops_test.model.wait_for_idle(
-        apps=[mongo_integrator], idle_period=10, status="blocked", timeout=1800
-    )
+    juju.remove_application(DATABASE_CHARM_NAME)
