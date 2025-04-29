@@ -80,7 +80,13 @@ def test_set_up_deployment(
     assert status.apps[kafka].app_status.current == "active"
     assert status.apps[zookeeper].app_status.current == "active"
     juju.deploy(S3_INTEGRATOR, channel=S3_CHANNEL)
-    juju.wait(lambda status: status.apps[S3_INTEGRATOR].is_blocked, timeout=1000, delay=5)
+    # S3 integrator app is sometimes in waiting status, while the unit is blocked
+    juju.wait(
+        lambda status: status.apps[S3_INTEGRATOR].is_blocked
+        or status.apps[S3_INTEGRATOR].units[f"{S3_INTEGRATOR}/0"].is_blocked,
+        timeout=1000,
+        delay=5,
+    )
 
     logger.info("Syncing credentials")
     juju.config(S3_INTEGRATOR, cloud_configs)
