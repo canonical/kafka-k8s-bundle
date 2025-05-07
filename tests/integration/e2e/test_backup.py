@@ -94,9 +94,7 @@ def test_set_up_deployment(
     juju.run(leader_unit, "sync-s3-credentials", params=cloud_credentials)
 
     juju.integrate(zookeeper, S3_INTEGRATOR)
-    juju.wait(
-        lambda status: jubilant.all_active(status, zookeeper, S3_INTEGRATOR), timeout=1000
-    )
+    juju.wait(lambda status: jubilant.all_active(status, zookeeper, S3_INTEGRATOR), timeout=1000)
 
     # bucket exists
     assert s3_bucket.meta.client.head_bucket(Bucket=s3_bucket.name)
@@ -145,9 +143,7 @@ def test_point_in_time_recovery(juju: jubilant.Juju, s3_bucket: Bucket, kafka, z
     backup_to_restore = backups[0]["id"]
     list_action = juju.run(leader_unit, "restore", params={"backup-id": backup_to_restore})
 
-    juju.wait(
-        lambda status: jubilant.all_active(status, zookeeper, kafka), timeout=1000, delay=10
-    )
+    juju.wait(lambda status: jubilant.all_active(status, zookeeper, kafka), timeout=1000, delay=10)
     assert f"max.message.bytes={NON_DEFAULT_TOPIC_SIZE}" in read_topic_config(
         model_full_name=juju.model, app_name=kafka, topic=TOPIC
     )
