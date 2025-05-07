@@ -238,7 +238,7 @@ def deploy_test_app(juju: jubilant.Juju, kafka, certificates, tls):
             juju.integrate(generated_app_name, certificates)
             juju.wait(
                 lambda status: jubilant.all_active(
-                    status, apps=[generated_app_name, certificates]
+                    status, generated_app_name, certificates
                 ),
                 timeout=1800,
                 delay=10,
@@ -248,7 +248,7 @@ def deploy_test_app(juju: jubilant.Juju, kafka, certificates, tls):
         juju.integrate(generated_app_name, DATABASE_CHARM_NAME)
         juju.wait(
             lambda status: jubilant.all_active(
-                status, apps=[generated_app_name, DATABASE_CHARM_NAME]
+                status, generated_app_name, DATABASE_CHARM_NAME
             ),
             timeout=1800,
             delay=10,

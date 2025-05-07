@@ -15,7 +15,6 @@ from mypy_boto3_s3.service_resource import Bucket
 from tests.integration.e2e.helpers import (
     create_topic,
     get_random_topic,
-    jubilant_all_units_idle,
     read_topic_config,
     write_topic_message_size_config,
 )
@@ -96,7 +95,7 @@ def test_set_up_deployment(
 
     juju.integrate(zookeeper, S3_INTEGRATOR)
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=[zookeeper, S3_INTEGRATOR]), timeout=1000
+        lambda status: jubilant.all_active(status, zookeeper, S3_INTEGRATOR), timeout=1000
     )
 
     # bucket exists
@@ -147,7 +146,7 @@ def test_point_in_time_recovery(juju: jubilant.Juju, s3_bucket: Bucket, kafka, z
     list_action = juju.run(leader_unit, "restore", params={"backup-id": backup_to_restore})
 
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=[zookeeper, kafka]), timeout=1000, delay=10
+        lambda status: jubilant.all_active(status, zookeeper, kafka), timeout=1000, delay=10
     )
     assert f"max.message.bytes={NON_DEFAULT_TOPIC_SIZE}" in read_topic_config(
         model_full_name=juju.model, app_name=kafka, topic=TOPIC
@@ -186,7 +185,7 @@ def test_new_cluster_migration(juju: jubilant.Juju, s3_bucket: Bucket, kafka, zo
 
     juju.integrate("new-zk", S3_INTEGRATOR)
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=["new-zk", S3_INTEGRATOR]),
+        lambda status: jubilant.all_active(status, "new-zk", S3_INTEGRATOR),
         timeout=1000,
         delay=10,
     )
@@ -203,12 +202,12 @@ def test_new_cluster_migration(juju: jubilant.Juju, s3_bucket: Bucket, kafka, zo
 
     backup_to_restore = backups[0]["id"]
     list_action = juju.run(leader_unit, "restore", params={"backup-id": backup_to_restore})
-    juju.wait(lambda status: jubilant_all_units_idle(status, apps=["new-zk"]))
+    juju.wait(lambda status: jubilant.all_agents_idle(status, "new-zk"))
 
     juju.integrate(kafka, "new-zk")
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=[kafka, "new-zk"])
-        and jubilant_all_units_idle(status, apps=[kafka, "new-zk"]),
+        lambda status: jubilant.all_active(status, kafka, "new-zk")
+        and jubilant.all_agents_idle(status, kafka, "new-zk"),
         timeout=1800,
         delay=10,
     )

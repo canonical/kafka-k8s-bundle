@@ -15,7 +15,6 @@ from tests.integration.e2e.helpers import (
     get_action_parameters,
     get_address,
     get_random_topic,
-    jubilant_all_units_idle,
     scale_application,
 )
 
@@ -45,7 +44,7 @@ def test_cluster_is_deployed_successfully(juju, kafka, zookeeper, tls, certifica
         channel="5/edge",
     )
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=[kafka, zookeeper, DATABASE_CHARM_NAME]),
+        lambda status: jubilant.all_active(status, kafka, zookeeper, DATABASE_CHARM_NAME),
         timeout=1200,
         delay=10,
     )
@@ -65,7 +64,7 @@ def test_test_app_actually_set_up(
 
         juju.integrate(data_integrator_producer, kafka)
         juju.wait(
-            lambda status: jubilant.all_active(status, apps=[data_integrator_producer, kafka]),
+            lambda status: jubilant.all_active(status, data_integrator_producer, kafka),
             timeout=1800,
             delay=10,
         )
@@ -77,7 +76,7 @@ def test_test_app_actually_set_up(
         )
         juju.integrate(data_integrator_consumer, kafka)
         juju.wait(
-            lambda status: jubilant.all_active(status, apps=[data_integrator_consumer, kafka]),
+            lambda status: jubilant.all_active(status, data_integrator_consumer, kafka),
             timeout=1800,
             delay=10,
         )
@@ -99,7 +98,7 @@ def test_test_app_actually_set_up(
         # Relate with Kafka and automatically start producer
         juju.integrate(producer, kafka)
         juju.wait(
-            lambda status: jubilant.all_active(status, apps=[producer, kafka]),
+            lambda status: jubilant.all_active(status, producer, kafka),
             timeout=1800,
             delay=10,
         )
@@ -117,7 +116,7 @@ def test_test_app_actually_set_up(
         # Relate with Kafka and automatically start consumer
         juju.integrate(consumer, kafka)
         juju.wait(
-            lambda status: jubilant.all_active(status, apps=[consumer, kafka]),
+            lambda status: jubilant.all_active(status, consumer, kafka),
             timeout=1800,
             delay=10,
         )
@@ -169,8 +168,8 @@ def test_test_app_actually_set_up(
     scale_application(juju, application_name=consumer, desired_count=1)
 
     juju.wait(
-        lambda status: jubilant_all_units_idle(status, apps=[producer, consumer])
-        and jubilant.all_active(status, apps=[producer, consumer]),
+        lambda status: jubilant.all_agents_idle(status, producer, consumer)
+        and jubilant.all_active(status, producer, consumer),
         timeout=1000,
         delay=5,
     )
@@ -204,7 +203,7 @@ def test_consumed_messages(juju: jubilant.Juju, deploy_data_integrator):
 
     juju.integrate(mongo_integrator, DATABASE_CHARM_NAME)
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=[mongo_integrator, DATABASE_CHARM_NAME]),
+        lambda status: jubilant.all_active(status, mongo_integrator, DATABASE_CHARM_NAME),
         timeout=1800,
         delay=10,
     )

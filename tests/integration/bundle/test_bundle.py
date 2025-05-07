@@ -88,18 +88,16 @@ def test_deploy_app_charm_relate(juju: jubilant.Juju, bundle_file, tls):
         channel="edge",
         config=config,
     )
-    juju.wait(lambda status: jubilant.all_active(status, apps=[PRODUCER]), timeout=600)
+    juju.wait(lambda status: jubilant.all_active(status, PRODUCER), timeout=600)
 
     if tls:
         juju.integrate(PRODUCER, TLS_CHARM_NAME)
 
-    juju.wait(
-        lambda status: jubilant.all_active(status, apps=applications), timeout=1200, delay=10
-    )
+    juju.wait(lambda status: jubilant.all_active(status, *applications), timeout=1200, delay=10)
     juju.integrate(KAFKA, PRODUCER)
 
     juju.wait(
-        lambda status: jubilant.all_active(status, apps=applications + [PRODUCER]),
+        lambda status: jubilant.all_active(status, *applications + [PRODUCER]),
         timeout=1000,
         delay=10,
     )
