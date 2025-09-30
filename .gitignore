@@ -7,3 +7,6 @@ build/
 parts/
 prime/
 stage/
+*.tfstate*
+.terraform*
+
