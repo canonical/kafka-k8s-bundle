@@ -47,7 +47,7 @@ variable "cos_offers" {
 }
 
 variable "broker" {
-  description = "Defines the Apache Kafka broker appliaction configuration"
+  description = "Defines the Apache Kafka broker application configuration"
   type = object({
     app_name    = optional(string, "kafka-broker")
     channel     = optional(string, "4/edge")
@@ -63,7 +63,7 @@ variable "broker" {
 }
 
 variable "controller" {
-  description = "Defines the Apache Kafka KRaft controller appliaction configuration"
+  description = "Defines the Apache Kafka KRaft controller application configuration"
   type = object({
     app_name    = optional(string, "kafka-controller")
     channel     = optional(string, "4/edge")
@@ -85,7 +85,7 @@ variable "controller" {
 
 
 variable "connect" {
-  description = "Defines the Kafka Connect appliaction configuration"
+  description = "Defines the Kafka Connect application configuration"
   type = object({
     app_name    = optional(string, "kafka-connect")
     channel     = optional(string, "latest/edge")
@@ -100,7 +100,7 @@ variable "connect" {
 }
 
 variable "karapace" {
-  description = "Defines the Karapace appliaction configuration"
+  description = "Defines the Karapace application configuration"
   type = object({
     app_name    = optional(string, "karapace")
     channel     = optional(string, "latest/edge")
@@ -115,7 +115,7 @@ variable "karapace" {
 }
 
 variable "ui" {
-  description = "Defines the Kafbat Kafka UI appliaction configuration"
+  description = "Defines the Kafbat Kafka UI application configuration"
   type = object({
     app_name    = optional(string, "kafka-ui")
     channel     = optional(string, "latest/edge")
