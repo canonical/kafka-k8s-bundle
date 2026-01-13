@@ -170,6 +170,7 @@ class TerraformDeployer:
 
 
 def deploy_core_apps(deploy_ingress: bool = True) -> None:
+    jubilant.Juju().add_model(model=CORE_MODEL_NAME)
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
     core_juju.deploy(
         CERTIFICATES_APP_NAME, config={"ca-common-name": "test-ca"}, channel="1/stable"

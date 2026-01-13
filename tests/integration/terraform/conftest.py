@@ -91,7 +91,7 @@ def deploy_cluster(
     terraform_deployer.cleanup()
 
     config = get_terraform_config(split_mode=(kraft_mode == "multi"))
-    config["ingress_offer"] = ingress_offer
+    config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
     terraform_deployer.terraform_init()
@@ -99,21 +99,12 @@ def deploy_cluster(
 
 
 @pytest.fixture()
-def enable_terraform_tls(juju: jubilant.Juju, model_uuid: str, kraft_mode):
+def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode):
     """Deploy a tls endpoint and update terraform."""
-    jubilant.Juju().add_model(model=CORE_MODEL_NAME)
-    tls_model = jubilant.Juju(model=CORE_MODEL_NAME)
-    tls_model.deploy(CERTIFICATES_APP_NAME, config={"ca-common-name": "test-ca"}, channel="stable")
-    tls_model.wait(
-        lambda status: all_active_idle(status, CERTIFICATES_APP_NAME),
-        delay=5,
-        successes=5,
-        timeout=600,
-    )
-    tls_model.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
+    core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
 
     # Store the CA cert for requests
-    result = tls_model.run(f"{CERTIFICATES_APP_NAME}/0", "get-ca-certificate")
+    result = core_juju.run(f"{CERTIFICATES_APP_NAME}/0", "get-ca-certificate")
     ca = result.results.get("ca-certificate")
     open(CA_FILE, "w").write(ca)
 
