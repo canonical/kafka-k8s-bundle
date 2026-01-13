@@ -235,7 +235,7 @@ class ComponentValidation:
         """Test that Kafka UI is accessible."""
         # Get LoadBalancer IP address
         raw = check_output(
-            "kubectl get services -A --field-selector spec.type=LoadBalancer -o json",
+            "microk8s.kubectl get services -A --field-selector spec.type=LoadBalancer -o json",
             shell=True,
             universal_newlines=True,
             stderr=PIPE,
