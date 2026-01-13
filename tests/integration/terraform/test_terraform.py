@@ -25,8 +25,8 @@ def test_deployment_active(juju: Juju, kraft_mode, deploy_cluster):
     app_list = get_app_list(kraft_mode)
     juju.wait(
         lambda status: all_active_idle(status, *app_list),
-        delay=5,
-        successes=6,
+        delay=3,
+        successes=20,
         timeout=3600,
     )
     status = juju.status()
@@ -52,8 +52,8 @@ def test_tls_toggle(juju: Juju, kraft_mode, enable_terraform_tls):
 
     juju.wait(
         lambda status: all_active_idle(status, *app_list),
-        delay=5,
-        successes=6,
+        delay=3,
+        successes=20,
         timeout=3600,
     )
     status = juju.status()
