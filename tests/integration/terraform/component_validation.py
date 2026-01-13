@@ -235,17 +235,21 @@ class ComponentValidation:
         """Test that Kafka UI is accessible."""
         # Get LoadBalancer IP address
         raw = check_output(
-            "microk8s.kubectl get services -A --field-selector spec.type=LoadBalancer -o json",
+            "microk8s.kubectl get services -A -o json",
             shell=True,
             universal_newlines=True,
             stderr=PIPE,
         )
         lb_json = json.loads(raw)
+        lb_ip = None
 
-        try:
-            lb_ip = lb_json["items"][0]["status"]["loadBalancer"]["ingress"][0]["ip"]
-        except (KeyError, IndexError) as e:
-            raise Exception("Can't find LoadBalancer external IP") from e
+        for item in lb_json["items"]:
+            if item.get("spec", {}).get("type") == "LoadBalancer":
+                lb_ip = item["status"]["loadBalancer"]["ingress"][0]["ip"]
+                break
+
+        if not lb_ip:
+            raise Exception("Can't find LoadBalancer external IP")
 
         # Generate the URL for Kafka UI based on LB IP address
         url = f"https://{lb_ip}/{self.juju.model}-{KAFKA_UI_APP_NAME}"

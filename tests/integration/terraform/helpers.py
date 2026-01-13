@@ -180,6 +180,7 @@ def deploy_core_apps(ingress: str | None = None) -> None:
     if not ingress:
         core_juju.deploy(TRAEFIK_APP_NAME, trust=True)
         apps.add(TRAEFIK_APP_NAME)
+        core_juju.integrate(CERTIFICATES_APP_NAME, f"{TRAEFIK_APP_NAME}:certificates")
 
     core_juju.wait(
         lambda status: all_active_idle(status, *apps),
