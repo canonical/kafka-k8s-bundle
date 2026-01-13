@@ -73,7 +73,6 @@ def ingress_offer(request: pytest.FixtureRequest, juju: jubilant.Juju, models: s
         return offer
 
     offer_url = f"admin/{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}"
-    juju.consume(offer_url)
     return offer_url
 
 
