@@ -13,9 +13,10 @@ from tests.integration.terraform.helpers import all_active_idle, deploy_core_app
 logger = logging.getLogger(__name__)
 
 
-def test_deploy_core_model(ingress_offer: str):
+def test_deploy_core_model(request):
     """Deploy the ingress and TLS provider charms."""
-    deploy_core_apps(deploy_ingress=not ingress_offer)
+    provided_ingress = f'{request.config.getoption("--ingress-offer")}'
+    deploy_core_apps(ingress=provided_ingress)
 
 
 def test_deployment_active(juju: Juju, kraft_mode, deploy_cluster):

@@ -169,7 +169,7 @@ class TerraformDeployer:
                 file_path.unlink(missing_ok=True)
 
 
-def deploy_core_apps(deploy_ingress: bool = True) -> None:
+def deploy_core_apps(ingress: str | None = None) -> None:
     jubilant.Juju().add_model(model=CORE_MODEL_NAME)
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
     core_juju.deploy(
@@ -177,7 +177,7 @@ def deploy_core_apps(deploy_ingress: bool = True) -> None:
     )
     apps = {CERTIFICATES_APP_NAME}
 
-    if deploy_ingress:
+    if not ingress:
         core_juju.deploy(TRAEFIK_APP_NAME, trust=True)
         apps.add(TRAEFIK_APP_NAME)
 
@@ -189,8 +189,10 @@ def deploy_core_apps(deploy_ingress: bool = True) -> None:
     )
     core_juju.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
 
-    if deploy_ingress:
-        core_juju.offer(f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint=INGRESS_OFFER_NAME)
+    if ingress:
+        core_juju.offer(ingress)
+    else:
+        core_juju.offer(f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint="ingress")
 
 
 def get_terraform_config(

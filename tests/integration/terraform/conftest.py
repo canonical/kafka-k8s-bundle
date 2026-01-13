@@ -11,7 +11,7 @@ from tests.integration.terraform.helpers import (
     CA_FILE,
     CERTIFICATES_APP_NAME,
     CORE_MODEL_NAME,
-    INGRESS_OFFER_NAME,
+    TRAEFIK_APP_NAME,
     TerraformDeployer,
     all_active_idle,
     get_app_list,
@@ -61,19 +61,13 @@ def kraft_mode(request: pytest.FixtureRequest) -> KRaftMode:
 
 @pytest.fixture(scope="module")
 def ingress_offer(
-    request: pytest.FixtureRequest, juju: jubilant.Juju, models: set[str]
+    request: pytest.FixtureRequest,
 ) -> str | None:
-    # Have we already consumed the offer?
-    status = juju.status()
-    if INGRESS_OFFER_NAME in status.app_endpoints:
-        return status.app_endpoints[INGRESS_OFFER_NAME].url
-
-    offer = f'{request.config.getoption("--ingress-offer")}' or None
-    if offer:
-        juju.consume(offer)
-        return offer
-
-    return None
+    offer = (
+        f'{request.config.getoption("--ingress-offer")}'
+        or f"admin/{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}"
+    )
+    return offer
 
 
 # -- Terraform --
