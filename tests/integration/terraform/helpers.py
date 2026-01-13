@@ -178,7 +178,7 @@ def deploy_core_apps(deploy_ingress: bool = True) -> None:
     apps = {CERTIFICATES_APP_NAME}
 
     if deploy_ingress:
-        core_juju.deploy(TRAEFIK_APP_NAME)
+        core_juju.deploy(TRAEFIK_APP_NAME, trust=True)
         apps.add(TRAEFIK_APP_NAME)
 
     core_juju.wait(
