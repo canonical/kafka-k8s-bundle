@@ -8,9 +8,14 @@ import logging
 
 from jubilant import Juju
 from tests.integration.terraform.component_validation import ComponentValidation
-from tests.integration.terraform.helpers import all_active_idle, get_app_list
+from tests.integration.terraform.helpers import all_active_idle, deploy_core_apps, get_app_list
 
 logger = logging.getLogger(__name__)
+
+
+def test_deploy_core_model(ingress_offer: str):
+    """Deploy the ingress and TLS provider charms."""
+    deploy_core_apps(deploy_ingress=not ingress_offer)
 
 
 def test_deployment_active(juju: Juju, kraft_mode, deploy_cluster):
@@ -36,7 +41,7 @@ def test_components(juju: Juju):
     validator.test_kafka_admin_operations()
     validator.test_kafka_producer_consumer()
     validator.test_karapace()
-    # validator.test_ui_accessibility()
+    validator.test_ui_accessibility()
     validator.test_connect_endpoints()
     validator.test_create_mm2_connector()
 

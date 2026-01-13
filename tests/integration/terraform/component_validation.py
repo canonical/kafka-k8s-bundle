@@ -4,6 +4,7 @@
 
 """Tests specific functionality of each component."""
 
+import json
 import logging
 import re
 from functools import cached_property
@@ -19,8 +20,6 @@ from tests.integration.terraform.helpers import (
     KAFKA_BROKER_APP_NAME,
     KAFKA_INTERNAL_PORT,
     KAFKA_UI_APP_NAME,
-    KAFKA_UI_PORT,
-    KAFKA_UI_PROTO,
     KAFKA_UI_SECRET_KEY,
     KARAPACE_APP_NAME,
     KARAPACE_PORT,
@@ -234,6 +233,23 @@ class ComponentValidation:
 
     def test_ui_accessibility(self):
         """Test that Kafka UI is accessible."""
+        # Get LoadBalancer IP address
+        raw = check_output(
+            "kubectl get services -A --field-selector spec.type=LoadBalancer -o json",
+            shell=True,
+            universal_newlines=True,
+            stderr=PIPE,
+        )
+        lb_json = json.loads(raw)
+
+        try:
+            lb_ip = lb_json["items"][0]["status"]["loadBalancer"]["ingress"][0]["ip"]
+        except (KeyError, IndexError) as e:
+            raise Exception("Can't find LoadBalancer external IP") from e
+
+        # Generate the URL for Kafka UI based on LB IP address
+        url = f"https://{lb_ip}/{self.juju.model}-{KAFKA_UI_APP_NAME}"
+
         secret_data = get_secret_by_label(
             self.model, f"cluster.{KAFKA_UI_APP_NAME}.app", owner=KAFKA_UI_APP_NAME
         )
@@ -242,19 +258,11 @@ class ComponentValidation:
         if not password:
             raise Exception("Can't fetch the admin user's password.")
 
-        # Verify that we're using TLS provider's cert in case TLS enabled.
-        _verify = False
-        if self.tls:
-            _verify = CA_FILE
-
-        unit_ip = self.get_unit_ipv4_address(self.ui_unit_name)
-        url = f"{KAFKA_UI_PROTO}://{unit_ip}:{KAFKA_UI_PORT}"
-
         login_resp = requests.post(
             f"{url}/login",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={"username": "admin", "password": password},
-            verify=_verify,
+            verify=False,
         )
         assert login_resp.status_code == 200
         # Successful login would lead to a redirect
@@ -265,7 +273,7 @@ class ComponentValidation:
             f"{url}/api/clusters",
             headers={"Content-Type": "application/json"},
             cookies=cookies,
-            verify=_verify,
+            verify=False,
         )
 
         clusters_json = clusters_resp.json()

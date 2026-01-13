@@ -7,11 +7,12 @@ import typing
 
 import jubilant
 import pytest
-from tests.integration.terraform.component_validation import ComponentValidation
 from tests.integration.terraform.helpers import (
     CA_FILE,
     CERTIFICATES_APP_NAME,
-    TLS_MODEL_NAME,
+    CORE_MODEL_NAME,
+    INGRESS_OFFER_NAME,
+    TRAEFIK_APP_NAME,
     TerraformDeployer,
     all_active_idle,
     get_app_list,
@@ -40,6 +41,13 @@ def pytest_addoption(parser):
         help="KRaft mode to run the tests, 'single' or 'multi'",
         default="single",
     )
+    parser.addoption(
+        "--ingress-offer",
+        action="store",
+        help="The ingress offer URL to use for deployment. If not provided,"
+        " Traefik K8s operator is deployed in the core model.",
+        default="",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -52,11 +60,30 @@ def kraft_mode(request: pytest.FixtureRequest) -> KRaftMode:
     return mode
 
 
+@pytest.fixture(scope="module")
+def ingress_offer(request: pytest.FixtureRequest, juju: jubilant.Juju, models: set[str]) -> str:
+    # Have we already consumed the offer?
+    status = juju.status()
+    if INGRESS_OFFER_NAME in status.app_endpoints:
+        return status.app_endpoints[INGRESS_OFFER_NAME].url
+
+    offer = f'{request.config.getoption("--ingress-offer")}' or None
+    if offer:
+        juju.consume(offer)
+        return offer
+
+    offer_url = f"admin/{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}"
+    juju.consume(offer_url)
+    return offer_url
+
+
 # -- Terraform --
 
 
 @pytest.fixture()
-def deploy_cluster(juju: jubilant.Juju, model_uuid: str, kraft_mode):
+def deploy_cluster(
+    juju: jubilant.Juju, model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str
+):
     """Deploy the cluster in single mode."""
     terraform_deployer = TerraformDeployer(model_uuid)
 
@@ -64,6 +91,7 @@ def deploy_cluster(juju: jubilant.Juju, model_uuid: str, kraft_mode):
     terraform_deployer.cleanup()
 
     config = get_terraform_config(split_mode=(kraft_mode == "multi"))
+    config["ingress_offer"] = ingress_offer
     tfvars_file = terraform_deployer.create_tfvars(config)
 
     terraform_deployer.terraform_init()
@@ -73,8 +101,8 @@ def deploy_cluster(juju: jubilant.Juju, model_uuid: str, kraft_mode):
 @pytest.fixture()
 def enable_terraform_tls(juju: jubilant.Juju, model_uuid: str, kraft_mode):
     """Deploy a tls endpoint and update terraform."""
-    jubilant.Juju().add_model(model=TLS_MODEL_NAME)
-    tls_model = jubilant.Juju(model=TLS_MODEL_NAME)
+    jubilant.Juju().add_model(model=CORE_MODEL_NAME)
+    tls_model = jubilant.Juju(model=CORE_MODEL_NAME)
     tls_model.deploy(CERTIFICATES_APP_NAME, config={"ca-common-name": "test-ca"}, channel="stable")
     tls_model.wait(
         lambda status: all_active_idle(status, CERTIFICATES_APP_NAME),
@@ -82,7 +110,7 @@ def enable_terraform_tls(juju: jubilant.Juju, model_uuid: str, kraft_mode):
         successes=5,
         timeout=600,
     )
-    tls_model.offer(f"{TLS_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
+    tls_model.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
 
     # Store the CA cert for requests
     result = tls_model.run(f"{CERTIFICATES_APP_NAME}/0", "get-ca-certificate")
@@ -111,7 +139,7 @@ def disable_terraform_tls(juju: jubilant.Juju, model_uuid: str, kraft_mode):
         timeout=1800,
     )
 
-    juju.destroy_model(model=TLS_MODEL_NAME, force=True)
+    juju.destroy_model(model=CORE_MODEL_NAME, force=True)
 
 
 # -- Jubilant --
@@ -149,3 +177,11 @@ def model_uuid(juju: jubilant.Juju) -> str:
             if mdl["short-name"] == juju.model
         )
     )
+
+
+@pytest.fixture(scope="module")
+def models(juju: jubilant.Juju) -> set[str]:
+    return {
+        m["short-name"]
+        for m in json.loads(juju.cli("models", "--format", "json", include_model=False))["models"]
+    }

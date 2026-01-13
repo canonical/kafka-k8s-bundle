@@ -33,8 +33,10 @@ KAFKA_BROKER_APP_NAME = "kafka-broker"
 KAFKA_CONTROLLER_APP_NAME = "kafka-controller"
 
 CERTIFICATES_APP_NAME = "self-signed-certificates"
-TLS_MODEL_NAME = "tls-model"
-TLS_RELATION_OFFER = f"admin/{TLS_MODEL_NAME}.{CERTIFICATES_APP_NAME}"
+CORE_MODEL_NAME = "test-core"
+TLS_RELATION_OFFER = f"admin/{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}"
+TRAEFIK_APP_NAME = "traefik-k8s"
+INGRESS_OFFER_NAME = "traefik"
 CA_FILE = "/tmp/ca.pem"
 
 KAFKA_UI_SECRET_KEY = "admin-password"
@@ -165,6 +167,29 @@ class TerraformDeployer:
         for pattern in [".terraform.lock.hcl", "terraform.tfstate*", "*.tfplan"]:
             for file_path in self.terraform_dir.glob(pattern):
                 file_path.unlink(missing_ok=True)
+
+
+def deploy_core_apps(deploy_ingress: bool = True) -> None:
+    core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
+    core_juju.deploy(
+        CERTIFICATES_APP_NAME, config={"ca-common-name": "test-ca"}, channel="1/stable"
+    )
+    apps = {CERTIFICATES_APP_NAME}
+
+    if deploy_ingress:
+        core_juju.deploy(TRAEFIK_APP_NAME)
+        apps.add(TRAEFIK_APP_NAME)
+
+    core_juju.wait(
+        lambda status: all_active_idle(status, *apps),
+        delay=5,
+        successes=5,
+        timeout=600,
+    )
+    core_juju.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
+
+    if deploy_ingress:
+        core_juju.offer(f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint=INGRESS_OFFER_NAME)
 
 
 def get_terraform_config(
