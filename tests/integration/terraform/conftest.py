@@ -99,7 +99,7 @@ def deploy_cluster(
 
 
 @pytest.fixture()
-def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode):
+def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str):
     """Deploy a tls endpoint and update terraform."""
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
 
@@ -110,7 +110,9 @@ def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode):
 
     terraform_deployer = TerraformDeployer(model_uuid)
     config = get_terraform_config(enable_tls=True, split_mode=(kraft_mode == "multi"))
+    config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
+
     terraform_deployer.terraform_apply(tfvars_file)
 
 
