@@ -78,7 +78,12 @@ jobs:
             --microk8s-channel ${MICROK8S_CHANNEL//"-strict"/} \
             --juju-channel $JUJU_CHANNEL \
             --extra-debs pipx
-          
+
+          IP_ADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
+          sudo microk8s enable dns
+          sudo microk8s enable hostpath-storage
+          sudo microk8s enable metallb:$IP_ADDR-$IP_ADDR
+
           pipx ensurepath
           pipx install tox poetry
       - name: Install terraform snap
