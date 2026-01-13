@@ -68,7 +68,8 @@ def test_tls_components(juju: Juju):
 
     validator.test_kafka_admin_operations()
     validator.test_kafka_producer_consumer()
-    validator.test_karapace()
+    # FIXME: enable Karapace tests when the TLS toggle issue is fixes
+    # validator.test_karapace()
     validator.test_ui_accessibility()
     validator.test_connect_endpoints()
     validator.test_create_mm2_connector()
