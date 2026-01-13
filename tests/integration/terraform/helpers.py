@@ -26,9 +26,9 @@ KAFKA_UI_PORT = 8080
 KAFKA_UI_PROTO = "https"
 CONNECT_API_PORT = 8083
 
-CONNECT_APP_NAME = "kafka-connect-k8s"
-KARAPACE_APP_NAME = "karapace-k8s"
-KAFKA_UI_APP_NAME = "kafka-ui-k8s"
+CONNECT_APP_NAME = "kafka-connect"
+KARAPACE_APP_NAME = "karapace"
+KAFKA_UI_APP_NAME = "kafka-ui"
 KAFKA_BROKER_APP_NAME = "kafka-broker"
 KAFKA_CONTROLLER_APP_NAME = "kafka-controller"
 
