@@ -134,11 +134,12 @@ class ComponentValidation:
 
     def test_karapace(self):
         """Test creating a schema subject in Karapace, listing it and then deletes it."""
+        scheme = "https" if self.tls else "http"
         schema_name = "test-key"
         result = self.juju.run(unit=self.karapace_unit_name, action="get-password")
         password = result.results.get("password")
         karapace_endpoint = self.get_karapace_endpoint()
-        base_url = f"http://{karapace_endpoint}"
+        base_url = f"{scheme}://{karapace_endpoint}"
         auth = ("operator", password)
 
         # Verify that we're using TLS provider's cert in case TLS enabled.
