@@ -179,6 +179,7 @@ class ComponentValidation:
         response = requests.get(
             f"{base_url}/subjects",
             auth=auth,
+            verify=_verify,
         )
         response.raise_for_status()
         result = response.text
@@ -189,6 +190,7 @@ class ComponentValidation:
         response = requests.delete(
             f"{base_url}/subjects/{schema_name}",
             auth=auth,
+            verify=_verify,
         )
         response.raise_for_status()
 
