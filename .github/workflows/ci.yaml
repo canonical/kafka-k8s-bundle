@@ -11,8 +11,7 @@ on:
 
 env:
   JUJU_CHANNEL: "3.6/stable"
-  MICROK8S_CHANNEL: "1.28-strict/stable"
-  JUJU_BOOTSTRAP_OPTIONS: "--agent-version 3.6.12"
+  MICROK8S_CHANNEL: "1.32-strict/stable"
 
 jobs:
   lint:
@@ -39,9 +38,8 @@ jobs:
           - multi
         juju:
           - snap_channel: "3.6/stable"
-            agent: "3.6.10"
     runs-on: [self-hosted, linux, AMD64, X64, xlarge, noble]
-    name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.agent || matrix.juju.snap_channel }}
+    name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.snap_channel }}
     needs:
       - lint
     timeout-minutes: 120
