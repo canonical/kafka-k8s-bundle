@@ -44,7 +44,8 @@ KAFKA_UI_SECRET_KEY = "admin-password"
 # Base Terraform configs
 SINGLE_MODE_DEFAULT_CONFIG = {
     "profile": "testing",
-    "broker": {"units": 1},
+    "broker": {"units": 3},
+    "controller": {"units": 0},
     "connect": {"units": 1},
     "karapace": {"units": 1},
     "ui": {"units": 1},
