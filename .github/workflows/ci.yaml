@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: "53 0 * * *" # Daily at 00:53 UTC
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   JUJU_CHANNEL: "3.6/stable"
   MICROK8S_CHANNEL: "1.32-strict/stable"
@@ -58,15 +62,17 @@ jobs:
           mkdir -p ~/.kube
           chmod 0700 ~/.kube
 
-          sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml << EOF
-          server = "$DOCKERHUB_MIRROR"
-          [host."${DOCKERHUB_MIRROR#'https://'}"]
-          capabilities = ["pull", "resolve"]
-          EOF
+          if [[ -v DOCKERHUB_MIRROR ]]; then
+              sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml << EOF
+              server = "$DOCKERHUB_MIRROR"
+              [host."${DOCKERHUB_MIRROR#'https://'}"]
+              capabilities = ["pull", "resolve"]
+              EOF
 
-          sudo microk8s stop
-          sudo microk8s start
-
+              sudo microk8s stop
+              sudo microk8s start
+          fi
+          
           # make juju work with microk8s --classic
           sudo mkdir -p /var/snap/juju/current/microk8s/credentials
           sudo microk8s config | sudo tee /var/snap/juju/current/microk8s/credentials/client.config
