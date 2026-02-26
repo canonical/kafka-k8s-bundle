@@ -42,8 +42,7 @@ jobs:
           - multi
         juju:
           - snap_channel: "3.6/stable"
-    # runs-on: [self-hosted, linux, AMD64, X64, large, noble]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, AMD64, X64, large, noble]
     name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.snap_channel }}
     needs:
       - lint
