@@ -76,6 +76,7 @@ def ingress_offer(
     )
     return offer
 
+
 @pytest.fixture(scope="module")
 def kafka_channel(request: pytest.FixtureRequest) -> KafkaChannel:
     """Returns the Kafka charm channel to deploy."""
@@ -87,7 +88,11 @@ def kafka_channel(request: pytest.FixtureRequest) -> KafkaChannel:
 
 @pytest.fixture()
 def deploy_cluster(
-    juju: jubilant.Juju, model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel
+    juju: jubilant.Juju,
+    model_uuid: str,
+    kraft_mode: KRaftMode,
+    ingress_offer: str,
+    kafka_channel: KafkaChannel,
 ):
     """Deploy the cluster in single mode."""
     terraform_deployer = TerraformDeployer(model_uuid)
@@ -104,7 +109,9 @@ def deploy_cluster(
 
 
 @pytest.fixture()
-def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel):
+def enable_terraform_tls(
+    model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel
+):
     """Deploy a tls endpoint and update terraform."""
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
 
@@ -114,7 +121,9 @@ def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: 
     open(CA_FILE, "w").write(ca)
 
     terraform_deployer = TerraformDeployer(model_uuid)
-    config = get_terraform_config(enable_tls=True, split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel)
+    config = get_terraform_config(
+        enable_tls=True, split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel
+    )
     config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
