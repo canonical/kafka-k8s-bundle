@@ -201,22 +201,25 @@ def get_terraform_config(
     enable_cruise_control: bool = False,
     enable_tls: bool = False,
     split_mode: bool = False,
+    kafka_channel: str = "4/edge",
 ) -> Dict[str, Any]:
     """Get Terraform configuration based on deployment mode."""
     if split_mode:
         return get_multi_app_config(
             enable_cruise_control=enable_cruise_control,
             enable_tls=enable_tls,
+            kafka_channel=kafka_channel,
         )
     else:
         return get_single_mode_config(
             enable_cruise_control=enable_cruise_control,
             enable_tls=enable_tls,
+            kafka_channel=kafka_channel,
         )
 
 
 def get_single_mode_config(
-    enable_cruise_control: bool = False, enable_tls: bool = False
+    enable_cruise_control: bool = False, enable_tls: bool = False, kafka_channel: str = "4/edge"
 ) -> Dict[str, Any]:
     """Get Terraform configuration for single-mode deployment."""
     config = SINGLE_MODE_DEFAULT_CONFIG.copy()
@@ -227,11 +230,13 @@ def get_single_mode_config(
         # Add balancer role while preserving existing roles
         config["broker"]["config"] = {"roles": "broker,balancer"}
 
+    config["broker"] = {**config["broker"], "channel": kafka_channel}
+
     return config
 
 
 def get_multi_app_config(
-    enable_cruise_control: bool = False, enable_tls: bool = False
+    enable_cruise_control: bool = False, enable_tls: bool = False, kafka_channel: str = "4/edge"
 ) -> Dict[str, Any]:
     """Get Terraform configuration for multi-app (split) mode deployment."""
     config = SPLIT_MODE_DEFAULT_CONFIG.copy()
@@ -242,6 +247,9 @@ def get_multi_app_config(
     if enable_cruise_control:
         # Add balancer role while preserving existing roles
         config["broker"]["config"] = {"roles": "broker,balancer"}
+
+    config["broker"] = {**config["broker"], "channel": kafka_channel}
+    config["controller"] = {**config["controller"], "channel": kafka_channel}
 
     return config
 

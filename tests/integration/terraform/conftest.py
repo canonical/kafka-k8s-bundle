@@ -19,6 +19,7 @@ from tests.integration.terraform.helpers import (
 )
 
 KRaftMode = typing.Literal["single", "multi"]
+KafkaChannel = typing.Literal["4/edge", "4/beta", "4/candidate", "4/stable"]
 
 
 def pytest_addoption(parser):
@@ -47,6 +48,12 @@ def pytest_addoption(parser):
         " Traefik K8s operator is deployed in the core model.",
         default="",
     )
+    parser.addoption(
+        "--kafka-channel",
+        action="store",
+        help="Channel to use for the Kafka charm (broker and controller)",
+        default="4/edge",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -69,13 +76,18 @@ def ingress_offer(
     )
     return offer
 
+@pytest.fixture(scope="module")
+def kafka_channel(request: pytest.FixtureRequest) -> KafkaChannel:
+    """Returns the Kafka charm channel to deploy."""
+    return request.config.getoption("--kafka-channel") or "4/edge"
+
 
 # -- Terraform --
 
 
 @pytest.fixture()
 def deploy_cluster(
-    juju: jubilant.Juju, model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str
+    juju: jubilant.Juju, model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel
 ):
     """Deploy the cluster in single mode."""
     terraform_deployer = TerraformDeployer(model_uuid)
@@ -83,7 +95,7 @@ def deploy_cluster(
     # Ensure cleanup of any previous state
     terraform_deployer.cleanup()
 
-    config = get_terraform_config(split_mode=(kraft_mode == "multi"))
+    config = get_terraform_config(split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel)
     config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
@@ -92,7 +104,7 @@ def deploy_cluster(
 
 
 @pytest.fixture()
-def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str):
+def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel):
     """Deploy a tls endpoint and update terraform."""
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
 
@@ -102,7 +114,7 @@ def enable_terraform_tls(model_uuid: str, kraft_mode: KRaftMode, ingress_offer: 
     open(CA_FILE, "w").write(ca)
 
     terraform_deployer = TerraformDeployer(model_uuid)
-    config = get_terraform_config(enable_tls=True, split_mode=(kraft_mode == "multi"))
+    config = get_terraform_config(enable_tls=True, split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel)
     config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
