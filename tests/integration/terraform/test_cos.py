@@ -134,7 +134,7 @@ def test_prometheus_metrics_and_alerts(cos_juju: Juju):
         len(kafka_alerts) == COSAssertions.ALERTS_COUNT
     ), f"Expected {COSAssertions.ALERTS_COUNT} alerts, got {len(kafka_alerts)}"
 
-    logger.info(f'{len(kafka_alerts)} alert rules are registered:')
+    logger.info(f"{len(kafka_alerts)} alert rules are registered:")
     for rule in kafka_alerts:
         logger.info(f'|__ {rule["name"]}')
 
