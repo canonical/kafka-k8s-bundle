@@ -15,7 +15,6 @@ from tests.integration.terraform.helpers import (
     COS,
     COS_MODEL_NAME,
     COSAssertions,
-    CosDeployer,
     all_active_idle,
     deploy_core_apps,
     get_app_list,
@@ -60,10 +59,8 @@ def test_kafka_with_cos_deployment_active(juju: Juju, kraft_mode, deploy_cluster
 #  -- COS Integration Tests --
 
 
-def test_grafana_dashboard(cos_deployer: CosDeployer):
+def test_grafana_dashboard(cos_juju: Juju):
     """Verify Grafana dashboard exists with expected panels."""
-    cos_juju = cos_deployer.cos_juju
-
     result = cos_juju.run(unit=f"{COS.GRAFANA}/0", action="get-admin-password")
     grafana_url = result.results.get("url")
     admin_password = result.results.get("admin-password")
@@ -77,9 +74,11 @@ def test_grafana_dashboard(cos_deployer: CosDeployer):
     ).json()
     assert dashboards, "No Kafka dashboards found in Grafana"
 
-    match = [d for d in dashboards if d["title"] == COSAssertions.DASHBOARD_TITLE]
-    assert match, f"Dashboard '{COSAssertions.DASHBOARD_TITLE}' not found"
+    dashboard_titles = [d["title"] for d in dashboards]
+    for expected_title in COSAssertions.DASHBOARDS:
+        assert expected_title in dashboard_titles, f"Dashboard '{expected_title}' not found"
 
+    match = [d for d in dashboards if d["title"] == COSAssertions.DASHBOARDS[0]]
     dashboard_uid = match[0]["uid"]
     details = requests.get(
         f"{grafana_url}/api/dashboards/uid/{dashboard_uid}",
@@ -99,15 +98,13 @@ def test_grafana_dashboard(cos_deployer: CosDeployer):
     for expected in COSAssertions.PANELS_TO_CHECK:
         assert expected in panel_titles, f"Panel '{expected}' not found"
 
-    logger.info(f"{COSAssertions.DASHBOARD_TITLE} dashboard has following panels:")
+    logger.info(f"{COSAssertions.DASHBOARDS[0]} dashboard has following panels:")
     for title in panel_titles:
         logger.info(f"|__ {title}")
 
 
-def test_prometheus_metrics_and_alerts(cos_deployer: CosDeployer):
+def test_prometheus_metrics_and_alerts(cos_juju: Juju):
     """Verify Prometheus has kafka metrics and alert rules."""
-    cos_juju = cos_deployer.cos_juju
-
     logger.info("Sleeping 5 minutes for metrics to accumulate...")
     time.sleep(300)
 
@@ -132,20 +129,18 @@ def test_prometheus_metrics_and_alerts(cos_deployer: CosDeployer):
     match = [g for g in response["data"]["groups"] if KAFKA in g["name"].lower()]
     assert match, "No kafka alert rule groups found"
 
-    kafka_alerts = match[0]
+    kafka_alerts = [rule for g in match for rule in g["rules"]]
     assert (
-        len(kafka_alerts["rules"]) == COSAssertions.ALERTS_COUNT
-    ), f"Expected {COSAssertions.ALERTS_COUNT} alerts, got {len(kafka_alerts['rules'])}"
+        len(kafka_alerts) == COSAssertions.ALERTS_COUNT
+    ), f"Expected {COSAssertions.ALERTS_COUNT} alerts, got {len(kafka_alerts)}"
 
-    logger.info(f'{len(kafka_alerts["rules"])} alert rules are registered:')
-    for rule in kafka_alerts["rules"]:
+    logger.info(f'{len(kafka_alerts)} alert rules are registered:')
+    for rule in kafka_alerts:
         logger.info(f'|__ {rule["name"]}')
 
 
-def test_loki_log_streams(cos_deployer: CosDeployer):
+def test_loki_log_streams(cos_juju: Juju):
     """Verify Loki is receiving log streams from Kafka."""
-    cos_juju = cos_deployer.cos_juju
-
     result = cos_juju.run(unit=f"{COS.TRAEFIK}/0", action="show-proxied-endpoints")
     proxied_endpoints = json.loads(result.results["proxied-endpoints"])
     loki_url = proxied_endpoints[f"{COS.LOKI}/0"]["url"]

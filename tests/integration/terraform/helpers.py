@@ -200,15 +200,15 @@ class COSAssertions:
     """Expected values for COS integration assertions."""
 
     APP = "kafka"
-    DASHBOARD_TITLE = "Kafka Metrics"
-    PANELS_COUNT = 44
+    DASHBOARDS = ["Kafka", "Kafka Connect Cluster"]
+    PANELS_COUNT = 50
     PANELS_TO_CHECK = (
         "JVM",
         "Brokers Online",
         "Active Controllers",
         "Total of Topics",
     )
-    ALERTS_COUNT = 24
+    ALERTS_COUNT = 25
 
 
 class CosDeployer:

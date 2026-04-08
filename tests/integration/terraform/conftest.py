@@ -11,6 +11,7 @@ from tests.integration.terraform.helpers import (
     CA_FILE,
     CERTIFICATES_APP_NAME,
     CORE_MODEL_NAME,
+    COS_MODEL_NAME,
     TRAEFIK_APP_NAME,
     CosDeployer,
     TerraformDeployer,
@@ -210,7 +211,13 @@ def cos_deployer():
     #    deployer.destroy()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
+def cos_juju():
+    """Return a Juju instance pointing at the existing COS model."""
+    return jubilant.Juju(model=COS_MODEL_NAME)
+
+
+@pytest.fixture(scope="module")
 def deploy_cluster_with_cos(
     juju: jubilant.Juju,
     model_uuid: str,
