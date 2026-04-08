@@ -54,6 +54,7 @@ jobs:
       matrix:
         tox-environment:
           - integration-terraform
+          - integration-terraform-cos
         kraft-mode:
           - single
           - multi

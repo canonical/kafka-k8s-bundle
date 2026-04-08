@@ -34,9 +34,11 @@ KAFKA_CONTROLLER_APP_NAME = "kafka-controller"
 
 CERTIFICATES_APP_NAME = "self-signed-certificates"
 CORE_MODEL_NAME = "test-core"
+COS_MODEL_NAME = "test-cos"
 TLS_RELATION_OFFER = f"admin/{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}"
 TRAEFIK_APP_NAME = "traefik-k8s"
 INGRESS_OFFER_NAME = "traefik"
+COS_TERRAFORM_DIR = "tests/integration/terraform/cos"
 CA_FILE = "/tmp/ca.pem"
 
 KAFKA_UI_SECRET_KEY = "admin-password"
@@ -158,6 +160,17 @@ class TerraformDeployer:
         if result.returncode != 0:
             raise RuntimeError(f"Terraform destroy failed: {result.stderr}")
 
+    def terraform_output(self) -> Dict[str, Any]:
+        """Read terraform output as a JSON dict."""
+        env = self.get_controller_credentials()
+        result = subprocess.check_output(
+            ["terraform", "output", "-json"],
+            cwd=self.terraform_dir,
+            text=True,
+            env={**env, **dict(subprocess.os.environ)},
+        )
+        return json.loads(result)
+
     def cleanup(self):
         """Clean up temporary files."""
         if self.tfvars_file and Path(self.tfvars_file.name).exists():
@@ -168,6 +181,99 @@ class TerraformDeployer:
         for pattern in [".terraform.lock.hcl", "terraform.tfstate*", "*.tfplan"]:
             for file_path in self.terraform_dir.glob(pattern):
                 file_path.unlink(missing_ok=True)
+
+
+class COS:
+    """COS application name constants."""
+
+    ALERTMANAGER = "alertmanager"
+    CATALOGUE = "catalogue"
+    TRAEFIK = "traefik"
+    GRAFANA = "grafana"
+    LOKI = "loki"
+    PROMETHEUS = "prometheus"
+
+    APPS = [ALERTMANAGER, CATALOGUE, GRAFANA, LOKI, PROMETHEUS, TRAEFIK]
+
+
+class COSAssertions:
+    """Expected values for COS integration assertions."""
+
+    APP = "kafka"
+    DASHBOARD_TITLE = "Kafka Metrics"
+    PANELS_COUNT = 44
+    PANELS_TO_CHECK = (
+        "JVM",
+        "Brokers Online",
+        "Active Controllers",
+        "Total of Topics",
+    )
+    ALERTS_COUNT = 24
+
+
+class CosDeployer:
+    """Helper class to manage COS-lite deployment for integration tests."""
+
+    def __init__(self):
+        self.cos_juju: Optional[jubilant.Juju] = None
+        self.deployer: Optional[TerraformDeployer] = None
+
+    def deploy(self, channel: str = "dev/edge") -> None:
+        """Deploy COS-lite in a separate Juju model via Terraform."""
+        jubilant.Juju().add_model(model=COS_MODEL_NAME)
+        self.cos_juju = jubilant.Juju(model=COS_MODEL_NAME)
+
+        # Resolve model UUID
+        models = json.loads(self.cos_juju.cli("models", "--format", "json", include_model=False))
+        cos_model_uuid = next(
+            mdl["model-uuid"] for mdl in models["models"] if mdl["short-name"] == COS_MODEL_NAME
+        )
+
+        self.deployer = TerraformDeployer(cos_model_uuid, COS_TERRAFORM_DIR)
+        self.deployer.cleanup()
+
+        config = {"channel": channel}
+        tfvars_file = self.deployer.create_tfvars(config)
+
+        self.deployer.terraform_init()
+        self.deployer.terraform_apply(tfvars_file)
+
+    def get_cos_offers(self) -> Dict[str, str]:
+        """Get COS offer URLs mapped to Kafka bundle cos_offers keys."""
+        output = self.deployer.terraform_output()
+        offers = output["offers"]["value"]
+        return {
+            "dashboard": offers["grafana_dashboards"]["url"],
+            "metrics": offers["prometheus_metrics"]["url"],
+            "logging": offers["loki_logging"]["url"],
+        }
+
+    def wait_for_active(self, timeout: int = 1800) -> None:
+        """Wait for all COS apps to be active/idle."""
+        self.cos_juju.wait(
+            lambda status: all_active_idle(status, *COS.APPS),
+            delay=5,
+            successes=5,
+            timeout=timeout,
+        )
+
+    def destroy(self) -> None:
+        """Destroy COS deployment: terraform destroy first, then remove the model."""
+        if self.deployer:
+            try:
+                self.deployer.terraform_destroy(
+                    tfvars_file=self.deployer.tfvars_file.name
+                    if self.deployer.tfvars_file
+                    else None
+                )
+            except RuntimeError:
+                logger.warning("Terraform destroy failed, proceeding with model removal")
+            self.deployer.cleanup()
+
+        try:
+            jubilant.Juju().destroy_model(model=COS_MODEL_NAME, force=True)
+        except Exception:
+            logger.warning(f"Failed to destroy model {COS_MODEL_NAME}")
 
 
 def deploy_core_apps(ingress: str | None = None) -> None:
