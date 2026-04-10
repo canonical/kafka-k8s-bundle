@@ -103,7 +103,7 @@ def test_grafana_dashboard(cos_juju: Juju):
         logger.info(f"|__ {title}")
 
 
-def test_prometheus_metrics_and_alerts(cos_juju: Juju):
+def test_prometheus_metrics_and_alerts(cos_juju: Juju, kraft_mode):
     """Verify Prometheus has kafka metrics and alert rules."""
     logger.info("Sleeping 5 minutes for metrics to accumulate...")
     time.sleep(300)
@@ -130,9 +130,14 @@ def test_prometheus_metrics_and_alerts(cos_juju: Juju):
     assert match, "No kafka alert rule groups found"
 
     kafka_alerts = [rule for g in match for rule in g["rules"]]
+    expected_alerts = (
+        COSAssertions.ALERTS_COUNT_SINGLE
+        if kraft_mode == "single"
+        else COSAssertions.ALERTS_COUNT_MULTI
+    )
     assert (
-        len(kafka_alerts) == COSAssertions.ALERTS_COUNT
-    ), f"Expected {COSAssertions.ALERTS_COUNT} alerts, got {len(kafka_alerts)}"
+        len(kafka_alerts) == expected_alerts
+    ), f"Expected {expected_alerts} alerts, got {len(kafka_alerts)}"
 
     logger.info(f"{len(kafka_alerts)} alert rules are registered:")
     for rule in kafka_alerts:
