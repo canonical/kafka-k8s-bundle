@@ -11,7 +11,9 @@ from tests.integration.terraform.helpers import (
     CA_FILE,
     CERTIFICATES_APP_NAME,
     CORE_MODEL_NAME,
+    COS_MODEL_NAME,
     TRAEFIK_APP_NAME,
+    CosDeployer,
     TerraformDeployer,
     all_active_idle,
     get_app_list,
@@ -192,3 +194,45 @@ def models(juju: jubilant.Juju) -> set[str]:
         m["short-name"]
         for m in json.loads(juju.cli("models", "--format", "json", include_model=False))["models"]
     }
+
+
+# -- COS --
+
+
+@pytest.fixture(scope="module")
+def cos_deployer():
+    """Deploy COS-lite and yield the deployer. Destroys on teardown unless --keep-models."""
+    # keep_models = typing.cast(bool, request.config.getoption("--keep-models"))
+    deployer = CosDeployer()
+    deployer.deploy()
+    deployer.wait_for_active()
+    yield deployer
+    # if not keep_models:
+    #    deployer.destroy()
+
+
+@pytest.fixture(scope="module")
+def cos_juju():
+    """Return a Juju instance pointing at the existing COS model."""
+    return jubilant.Juju(model=COS_MODEL_NAME)
+
+
+@pytest.fixture(scope="module")
+def deploy_cluster_with_cos(
+    juju: jubilant.Juju,
+    model_uuid: str,
+    kraft_mode: KRaftMode,
+    ingress_offer: str,
+    cos_deployer: CosDeployer,
+):
+    """Deploy the Kafka cluster with COS integration."""
+    terraform_deployer = TerraformDeployer(model_uuid)
+    terraform_deployer.cleanup()
+
+    config = get_terraform_config(split_mode=(kraft_mode == "multi"))
+    config["ingress_offer"] = ingress_offer.split(":")[-1]
+    config["cos_offers"] = cos_deployer.get_cos_offers()
+    tfvars_file = terraform_deployer.create_tfvars(config)
+
+    terraform_deployer.terraform_init()
+    terraform_deployer.terraform_apply(tfvars_file)
