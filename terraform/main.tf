@@ -6,8 +6,8 @@ locals {
   ui_app_name         = var.ui.units > 0 ? module.ui[0].app_name : null
   cos_enabled         = var.cos_offers.dashboard != null ? true : false
   tls_enabled         = var.tls_offer != null ? true : false
-  cos_agent_charm     = "grafana-agent"
-  cos_agent_channel   = "1/stable"
+  cos_agent_charm     = "opentelemetry-collector-k8s"
+  cos_agent_channel   = "2/stable"
 }
 
 module "broker" {
