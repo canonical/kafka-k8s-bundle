@@ -2,8 +2,8 @@
 # See LICENSE file for licensing details.
 
 module "cos-lite" {
-  source       = "git::https://github.com/canonical/observability-stack//terraform/cos-lite?ref=main"
+  source       = "git::https://github.com/canonical/observability-stack//terraform/cos-lite?ref=429fbe7cef454fe33596d5c918405d719a807a38"
   model_uuid   = var.model_uuid
-  channel      = var.channel
+  risk         = var.risk
   internal_tls = var.internal_tls
 }
