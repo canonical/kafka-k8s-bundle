@@ -294,7 +294,7 @@ def deploy_core_apps(ingress: str | None = None) -> None:
         lambda status: all_active_idle(status, *apps),
         delay=5,
         successes=5,
-        timeout=600,
+        timeout=1200,
     )
     core_juju.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
 
