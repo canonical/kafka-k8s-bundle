@@ -165,7 +165,7 @@ resource "juju_integration" "otel_cos_metrics" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
-    endpoint = "metrics-endpoint"
+    endpoint = "send-remote-write"
   }
 
   application {
@@ -179,7 +179,7 @@ resource "juju_integration" "otel_cos_dashboard" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
-    endpoint = "grafana-dashboard"
+    endpoint = "grafana-dashboards-provider"
   }
 
   application {
@@ -193,7 +193,7 @@ resource "juju_integration" "otel_cos_logging" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
-    endpoint = "logging"
+    endpoint = "send-loki-logs"
   }
 
   application {
@@ -212,7 +212,7 @@ resource "juju_integration" "kafka_cos_metrics" {
   }
 
   application {
-    name     = juju_application.kafka_cos_agent[0].name
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -228,6 +228,7 @@ resource "juju_integration" "kafka_cos_dashboard" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -243,6 +244,7 @@ resource "juju_integration" "kafka_cos_logging" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }
@@ -257,7 +259,7 @@ resource "juju_integration" "kraft_cos_metrics" {
   }
 
   application {
-    name     = juju_application.kafka_cos_agent[0].name
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -273,6 +275,7 @@ resource "juju_integration" "kraft_cos_dashboard" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -288,6 +291,7 @@ resource "juju_integration" "kraft_cos_logging" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }
@@ -302,7 +306,7 @@ resource "juju_integration" "connect_cos_metrics" {
   }
 
   application {
-    name     = juju_application.kafka_cos_agent[0].name
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -318,6 +322,7 @@ resource "juju_integration" "connect_cos_dashboard" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -333,6 +338,7 @@ resource "juju_integration" "connect_cos_logging" {
 
   application {
     name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }
