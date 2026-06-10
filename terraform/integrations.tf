@@ -156,8 +156,52 @@ resource "juju_integration" "kafka_ui_ingress" {
   }
 }
 
-# COS Integrations 
+# COS Integrations
 
+# Integration of the opentelemetry-collector with the offers from COS
+resource "juju_integration" "otel_cos_metrics" {
+  count      = local.cos_enabled ? 1 : 0
+  model_uuid = var.model_uuid
+
+  application {
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "send-remote-write"
+  }
+
+  application {
+    offer_url = var.cos_offers.metrics
+  }
+}
+
+resource "juju_integration" "otel_cos_dashboard" {
+  count      = local.cos_enabled ? 1 : 0
+  model_uuid = var.model_uuid
+
+  application {
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-provider"
+  }
+
+  application {
+    offer_url = var.cos_offers.dashboard
+  }
+}
+
+resource "juju_integration" "otel_cos_logging" {
+  count      = local.cos_enabled ? 1 : 0
+  model_uuid = var.model_uuid
+
+  application {
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "send-loki-logs"
+  }
+
+  application {
+    offer_url = var.cos_offers.logging
+  }
+}
+
+# Integrations of the Kafka applications with opentelemetry-collector-k8s
 resource "juju_integration" "kafka_cos_metrics" {
   count      = local.cos_enabled ? 1 : 0
   model_uuid = var.model_uuid
@@ -168,7 +212,7 @@ resource "juju_integration" "kafka_cos_metrics" {
   }
 
   application {
-    offer_url = var.cos_offers.metrics
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -183,7 +227,8 @@ resource "juju_integration" "kafka_cos_dashboard" {
   }
 
   application {
-    offer_url = var.cos_offers.dashboard
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -198,7 +243,8 @@ resource "juju_integration" "kafka_cos_logging" {
   }
 
   application {
-    offer_url = var.cos_offers.logging
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }
@@ -213,7 +259,7 @@ resource "juju_integration" "kraft_cos_metrics" {
   }
 
   application {
-    offer_url = var.cos_offers.metrics
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -228,7 +274,8 @@ resource "juju_integration" "kraft_cos_dashboard" {
   }
 
   application {
-    offer_url = var.cos_offers.dashboard
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -243,7 +290,8 @@ resource "juju_integration" "kraft_cos_logging" {
   }
 
   application {
-    offer_url = var.cos_offers.logging
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }
@@ -258,7 +306,7 @@ resource "juju_integration" "connect_cos_metrics" {
   }
 
   application {
-    offer_url = var.cos_offers.metrics
+    name = juju_application.kafka_cos_agent[0].name
   }
 
 }
@@ -273,7 +321,8 @@ resource "juju_integration" "connect_cos_dashboard" {
   }
 
   application {
-    offer_url = var.cos_offers.dashboard
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "grafana-dashboards-consumer"
   }
 
 }
@@ -288,7 +337,8 @@ resource "juju_integration" "connect_cos_logging" {
   }
 
   application {
-    offer_url = var.cos_offers.logging
+    name     = juju_application.kafka_cos_agent[0].name
+    endpoint = "receive-loki-logs"
   }
 
 }

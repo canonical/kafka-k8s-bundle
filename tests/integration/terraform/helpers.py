@@ -219,7 +219,7 @@ class CosDeployer:
         self.cos_juju: Optional[jubilant.Juju] = None
         self.deployer: Optional[TerraformDeployer] = None
 
-    def deploy(self, channel: str = "dev/edge") -> None:
+    def deploy(self, risk: str = "edge") -> None:
         """Deploy COS-lite in a separate Juju model via Terraform."""
         jubilant.Juju().add_model(model=COS_MODEL_NAME)
         self.cos_juju = jubilant.Juju(model=COS_MODEL_NAME)
@@ -233,7 +233,7 @@ class CosDeployer:
         self.deployer = TerraformDeployer(cos_model_uuid, COS_TERRAFORM_DIR)
         self.deployer.cleanup()
 
-        config = {"channel": channel}
+        config = {"risk": risk}
         tfvars_file = self.deployer.create_tfvars(config)
 
         self.deployer.terraform_init()
@@ -294,7 +294,7 @@ def deploy_core_apps(ingress: str | None = None) -> None:
         lambda status: all_active_idle(status, *apps),
         delay=5,
         successes=5,
-        timeout=600,
+        timeout=1800,
     )
     core_juju.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
 
