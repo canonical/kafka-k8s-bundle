@@ -9,4 +9,5 @@ prime/
 stage/
 *.tfstate*
 .terraform*
+!.terraform-docs.yml
 
