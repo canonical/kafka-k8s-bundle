@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 class ComponentValidation:
     """Test all Kafka ecosystem components functionality."""
 
-    def __init__(self, juju: jubilant.Juju, tls: bool = False):
+    def __init__(self, juju: jubilant.Juju, kubectl: str, tls: bool = False):
         self.juju = juju
+        self.kubectl = kubectl
         self.model = juju.model
         self.tls = tls
 
@@ -254,7 +255,7 @@ class ComponentValidation:
         """Test that Kafka UI is accessible."""
         # Get LoadBalancer IP address
         raw = check_output(
-            "microk8s.kubectl get services -A -o json",
+            f"{self.kubectl} get services -A -o json",
             shell=True,
             universal_newlines=True,
             stderr=PIPE,

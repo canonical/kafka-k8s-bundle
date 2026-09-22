@@ -12,7 +12,6 @@ from tests.integration.terraform.helpers import (
     CERTIFICATES_APP_NAME,
     CORE_MODEL_NAME,
     COS_MODEL_NAME,
-    TRAEFIK_APP_NAME,
     CosDeployer,
     TerraformDeployer,
     all_active_idle,
@@ -51,10 +50,23 @@ def pytest_addoption(parser):
         default="",
     )
     parser.addoption(
+        "--route-offer",
+        action="store",
+        help="The traefik-route offer URL to use for deployment. If not provided,"
+        " Traefik K8s operator is deployed in the core model.",
+        default="",
+    )
+    parser.addoption(
         "--kafka-channel",
         action="store",
         help="Channel to use for the Kafka charm (broker and controller)",
         default="4/edge",
+    )
+    parser.addoption(
+        "--kubectl",
+        action="store",
+        help="kubectl command to use for tests.",
+        default="sudo k8s kubectl",
     )
 
 
@@ -72,11 +84,25 @@ def kraft_mode(request: pytest.FixtureRequest) -> KRaftMode:
 def ingress_offer(
     request: pytest.FixtureRequest,
 ) -> str | None:
+    offer = f'{request.config.getoption("--ingress-offer")}' or f"admin/{CORE_MODEL_NAME}.ingress"
+    return offer
+
+
+@pytest.fixture(scope="module")
+def route_offer(
+    request: pytest.FixtureRequest,
+) -> str | None:
+    """The treafik-route offer."""
     offer = (
-        f'{request.config.getoption("--ingress-offer")}'
-        or f"admin/{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}"
+        f'{request.config.getoption("--route-offer")}' or f"admin/{CORE_MODEL_NAME}.traefik-route"
     )
     return offer
+
+
+@pytest.fixture(scope="module")
+def kubectl(request: pytest.FixtureRequest) -> str:
+    """Return the kubectl bin command to use for tests, e.g. `microk8s.kubectl`, `k8s kubectl`, etc."""
+    return f'{request.config.getoption("--kubectl")}'
 
 
 @pytest.fixture(scope="module")
@@ -93,7 +119,7 @@ def deploy_cluster(
     juju: jubilant.Juju,
     model_uuid: str,
     kraft_mode: KRaftMode,
-    ingress_offer: str,
+    route_offer: str,
     kafka_channel: KafkaChannel,
 ):
     """Deploy the cluster in single mode."""
@@ -103,7 +129,7 @@ def deploy_cluster(
     terraform_deployer.cleanup()
 
     config = get_terraform_config(split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel)
-    config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
+    config["route_offer"] = route_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
     terraform_deployer.terraform_init()
@@ -112,7 +138,7 @@ def deploy_cluster(
 
 @pytest.fixture()
 def enable_terraform_tls(
-    model_uuid: str, kraft_mode: KRaftMode, ingress_offer: str, kafka_channel: KafkaChannel
+    model_uuid: str, kraft_mode: KRaftMode, route_offer: str, kafka_channel: KafkaChannel
 ):
     """Deploy a tls endpoint and update terraform."""
     core_juju = jubilant.Juju(model=CORE_MODEL_NAME)
@@ -126,7 +152,7 @@ def enable_terraform_tls(
     config = get_terraform_config(
         enable_tls=True, split_mode=(kraft_mode == "multi"), kafka_channel=kafka_channel
     )
-    config["ingress_offer"] = ingress_offer.split(":")[-1]  # Remove the controller: prefix
+    config["route_offer"] = route_offer.split(":")[-1]  # Remove the controller: prefix
     tfvars_file = terraform_deployer.create_tfvars(config)
 
     terraform_deployer.terraform_apply(tfvars_file)
@@ -222,7 +248,7 @@ def deploy_cluster_with_cos(
     juju: jubilant.Juju,
     model_uuid: str,
     kraft_mode: KRaftMode,
-    ingress_offer: str,
+    route_offer: str,
     cos_deployer: CosDeployer,
 ):
     """Deploy the Kafka cluster with COS integration."""
@@ -230,7 +256,7 @@ def deploy_cluster_with_cos(
     terraform_deployer.cleanup()
 
     config = get_terraform_config(split_mode=(kraft_mode == "multi"))
-    config["ingress_offer"] = ingress_offer.split(":")[-1]
+    config["route_offer"] = route_offer.split(":")[-1].replace(CORE_MODEL_NAME, COS_MODEL_NAME)
     config["cos_offers"] = cos_deployer.get_cos_offers()
     tfvars_file = terraform_deployer.create_tfvars(config)
 

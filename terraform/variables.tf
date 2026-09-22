@@ -16,7 +16,13 @@ variable "tls_offer" {
 }
 
 variable "ingress_offer" {
-  description = "Ingress provider endpoint to be used on for the Kafka UI."
+  description = "Ingress provider endpoint to be used for the Kafka UI, only available on Kafka UI rev. <=9."
+  type        = string
+  default     = null
+}
+
+variable "route_offer" {
+  description = "Traefik-route provider endpoint to be used for the Kafka UI, available on Kafka UI since rev. 10."
   type        = string
   default     = null
 }
@@ -88,12 +94,12 @@ variable "connect" {
   description = "Defines the Kafka Connect application configuration"
   type = object({
     app_name    = optional(string, "kafka-connect")
-    channel     = optional(string, "latest/edge")
+    channel     = optional(string, "4/edge")
     config      = optional(map(string), {})
     constraints = optional(string, "arch=amd64")
     resources   = optional(map(string), {})
     revision    = optional(number, null)
-    base        = optional(string, "ubuntu@22.04")
+    base        = optional(string, "ubuntu@24.04")
     units       = optional(number, 1)
   })
   default = {}
@@ -127,6 +133,11 @@ variable "ui" {
     units       = optional(number, 1)
   })
   default = {}
+  validation {
+    condition     = var.ingress_offer == null || (var.ingress_offer != null && var.ui.revision != null && var.ui.revision <= 9) 
+    error_message = "Ingress offer should only be used for Kafka UI rev. <=9."
+  }
+
 }
 
 variable "integrator" {
