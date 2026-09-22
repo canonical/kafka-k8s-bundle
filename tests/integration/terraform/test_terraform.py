@@ -28,7 +28,7 @@ def test_deployment_active(juju: Juju, kraft_mode, deploy_cluster):
         lambda status: all_active_idle(status, *app_list),
         delay=3,
         successes=20,
-        timeout=3600,
+        timeout=1800,
     )
     status = juju.status()
     for app in app_list:
