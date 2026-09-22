@@ -209,8 +209,7 @@ class COSAssertions:
         "Total of Topics",
     )
     # kafka-k8s has 20 native alerts, kafka-connect-k8s has 3
-    # 2 alerts are automatically added for each app, namely HostDown & HostMetricsMissing
-    # Therefore, the total number for single is (20 + 3 + )
+    # 2 alerts are automatically added for kafka-connect app, namely HostDown & HostMetricsMissing
     ALERTS_COUNT_SINGLE = 25
     ALERTS_COUNT_MULTI = 45
 

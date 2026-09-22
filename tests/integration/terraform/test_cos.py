@@ -27,12 +27,12 @@ KAFKA = COSAssertions.APP
 
 def test_deploy_core_model(request):
     """Deploy the ingress and TLS provider charms."""
+    # COS lite deploys traefik, so we don't need a separate app in core model.
     deploy_core_apps(ingress=f"admin/{COS_MODEL_NAME}.ingress")
 
 
 def test_cos_deployment_active(cos_deployer):
     """Test that all 7 COS apps are active in the COS model."""
-    # COS lite deploys traefik and ssc, so we don't need separate core model.
     cos_juju = Juju(model=COS_MODEL_NAME)
     status = cos_juju.status()
     for app in COS.APPS:
