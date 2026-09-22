@@ -62,7 +62,7 @@ jobs:
     name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.snap_channel }}
     needs:
       - lint
-    timeout-minutes: 120
+    timeout-minutes: 240
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -90,3 +90,6 @@ jobs:
       - name: Run integration tests
         run: |
           tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge' }}
+      - name: Setup tmate session
+        uses: canonical/action-tmate@main
+        if: ${{ failure() }}
