@@ -7,11 +7,11 @@ on:
     inputs:
       kafka-channel:
         description: "Channel to use for the Kafka charm (broker and controller)"
-        default: "4/edge"
+        default: "4/edge/pr-595"
         required: false
         type: choice
         options:
-          - "4/edge"
+          - "4/edge/pr-595"
           - "4/beta"
           - "4/candidate"
           - "4/stable"
@@ -32,12 +32,11 @@ concurrency:
 
 env:
   JUJU_CHANNEL: "3.6/stable"
-  MICROK8S_CHANNEL: "1.32-strict/stable"
 
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -50,7 +49,6 @@ jobs:
   integration-test-terraform:
     strategy:
       fail-fast: false
-      max-parallel: 2
       matrix:
         tox-environment:
           - integration-terraform
@@ -60,54 +58,20 @@ jobs:
           - multi
         juju:
           - snap_channel: "3.6/stable"
-    runs-on: [self-hosted, linux, AMD64, X64, large, noble]
+    runs-on: [self-hosted, linux, AMD64, X64, xlarge, noble]
     name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.snap_channel }}
     needs:
       - lint
-    timeout-minutes: 120
+    timeout-minutes: 240
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup operator environment
         run: |
           sudo snap install concierge --classic
-          # calico has issues with strict confinements, so remove -strict
-          sudo snap install microk8s --channel ${MICROK8S_CHANNEL//"-strict"/} --classic
-          sudo snap install juju --channel $JUJU_CHANNEL
-
-          sudo usermod -a -G microk8s $USER
-          mkdir -p ~/.kube
-          chmod 0700 ~/.kube
-
-          if [[ -v DOCKERHUB_MIRROR ]]; then
-              
-          sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml << EOF
-          server = "$DOCKERHUB_MIRROR"
-          [host."${DOCKERHUB_MIRROR#'https://'}"]
-          capabilities = ["pull", "resolve"]
-          EOF
-
-          sudo microk8s stop
-          sudo microk8s start
-          
-          fi
-          
-          # make juju work with microk8s --classic
-          sudo mkdir -p /var/snap/juju/current/microk8s/credentials
-          sudo microk8s config | sudo tee /var/snap/juju/current/microk8s/credentials/client.config
-          sudo chown -R $USER:$USER /var/snap/juju/current/microk8s/credentials
-
-          sudo concierge prepare \
-            -p microk8s \
-            --microk8s-channel ${MICROK8S_CHANNEL//"-strict"/} \
-            --juju-channel $JUJU_CHANNEL \
-            --extra-debs pipx
-
-          IP_ADDR=$(ip -4 -j route get 2.2.2.2 | jq -r '.[] | .prefsrc')
-          sudo microk8s enable dns
-          sudo microk8s enable hostpath-storage
-          sudo microk8s enable metallb:$IP_ADDR-$IP_ADDR
-
+          sudo concierge prepare -p k8s --extra-debs pipx
+          juju model-defaults logging-config="<root>=INFO; unit=DEBUG" automatically-retry-hooks=true
+          juju model-config logging-config="<root>=INFO; unit=DEBUG" automatically-retry-hooks=true
           pipx ensurepath
           pipx install tox poetry
       - name: Install terraform snap
@@ -126,4 +90,10 @@ jobs:
           fi
       - name: Run integration tests
         run: |
-          tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge' }}
+          tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --model testing --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge/pr-595' }}
+      - name: juju debug-log
+        timeout-minutes: 3
+        run: juju debug-log --color --replay --no-tail
+      - name: Setup tmate session
+        uses: canonical/action-tmate@main
+        if: ${{ failure() }}

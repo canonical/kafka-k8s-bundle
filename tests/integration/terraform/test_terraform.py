@@ -28,16 +28,16 @@ def test_deployment_active(juju: Juju, kraft_mode, deploy_cluster):
         lambda status: all_active_idle(status, *app_list),
         delay=3,
         successes=20,
-        timeout=3600,
+        timeout=1800,
     )
     status = juju.status()
     for app in app_list:
         assert status.apps[app].app_status.current == "active"
 
 
-def test_components(juju: Juju):
+def test_components(juju: Juju, kubectl: str):
     """Test that all components are deployed."""
-    validator = ComponentValidation(juju=juju)
+    validator = ComponentValidation(juju=juju, kubectl=kubectl)
 
     validator.test_kafka_admin_operations()
     validator.test_kafka_producer_consumer()
@@ -62,9 +62,9 @@ def test_tls_toggle(juju: Juju, kraft_mode, enable_terraform_tls):
         assert status.apps[app].app_status.current == "active"
 
 
-def test_tls_components(juju: Juju):
+def test_tls_components(juju: Juju, kubectl: str):
     """Test that all components work with TLS enabled."""
-    validator = ComponentValidation(juju=juju, tls=True)
+    validator = ComponentValidation(juju=juju, kubectl=kubectl, tls=True)
 
     validator.test_kafka_admin_operations()
     validator.test_kafka_producer_consumer()

@@ -156,6 +156,20 @@ resource "juju_integration" "kafka_ui_ingress" {
   }
 }
 
+resource "juju_integration" "kafka_ui_traefik_route" {
+  count      = var.route_offer != null && var.ui.units > 0 ? 1 : 0
+  model_uuid = var.model_uuid
+
+  application {
+    name     = module.ui[0].app_name
+    endpoint = "traefik-route"
+  }
+
+  application {
+    offer_url = var.route_offer
+  }
+}
+
 # COS Integrations
 
 # Integration of the opentelemetry-collector with the offers from COS

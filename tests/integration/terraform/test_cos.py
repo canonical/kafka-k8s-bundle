@@ -27,8 +27,8 @@ KAFKA = COSAssertions.APP
 
 def test_deploy_core_model(request):
     """Deploy the ingress and TLS provider charms."""
-    provided_ingress = f'{request.config.getoption("--ingress-offer")}'
-    deploy_core_apps(ingress=provided_ingress)
+    # COS lite deploys traefik, so we don't need a separate app in core model.
+    deploy_core_apps(ingress=f"admin/{COS_MODEL_NAME}.ingress")
 
 
 def test_cos_deployment_active(cos_deployer):
@@ -40,6 +40,9 @@ def test_cos_deployment_active(cos_deployer):
         assert (
             status.apps[app].app_status.current == "active"
         ), f"COS app '{app}' is not active: {status.apps[app].app_status.current}"
+
+    # offer traefik-route
+    cos_juju.offer(f"{COS_MODEL_NAME}.traefik", endpoint="traefik-route", name="traefik-route")
 
 
 def test_kafka_with_cos_deployment_active(juju: Juju, kraft_mode, deploy_cluster_with_cos):
@@ -129,7 +132,13 @@ def test_prometheus_metrics_and_alerts(cos_juju: Juju, kraft_mode):
     match = [g for g in response["data"]["groups"] if KAFKA in g["name"].lower()]
     assert match, "No kafka alert rule groups found"
 
-    kafka_alerts = [rule for g in match for rule in g["rules"]]
+    # filter only kafka, kafka-connect alert rules
+    kafka_alerts = [
+        rule
+        for g in match
+        for rule in g["rules"]
+        if rule["labels"]["juju_charm"] in ("kafka-k8s", "kafka-connect-k8s")
+    ]
     expected_alerts = (
         COSAssertions.ALERTS_COUNT_SINGLE
         if kraft_mode == "single"
