@@ -7,11 +7,11 @@ on:
     inputs:
       kafka-channel:
         description: "Channel to use for the Kafka charm (broker and controller)"
-        default: "4/edge"
+        default: "4/edge/pr-595"
         required: false
         type: choice
         options:
-          - "4/edge"
+          - "4/edge/pr-595"
           - "4/beta"
           - "4/candidate"
           - "4/stable"
@@ -70,7 +70,8 @@ jobs:
         run: |
           sudo snap install concierge --classic
           sudo concierge prepare -p k8s --extra-debs pipx
-
+          juju model-defaults logging-config="<root>=INFO; unit=DEBUG" automatically-retry-hooks=true
+          juju model-config logging-config="<root>=INFO; unit=DEBUG" automatically-retry-hooks=true
           pipx ensurepath
           pipx install tox poetry
       - name: Install terraform snap
@@ -89,7 +90,10 @@ jobs:
           fi
       - name: Run integration tests
         run: |
-          tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge' }}
+          tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --model testing --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge/pr-595' }}
+      - name: juju debug-log
+        timeout-minutes: 3
+        run: juju debug-log --color --replay --no-tail
       - name: Setup tmate session
         uses: canonical/action-tmate@main
         if: ${{ failure() }}
