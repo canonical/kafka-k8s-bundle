@@ -313,7 +313,7 @@ def get_terraform_config(
     enable_cruise_control: bool = False,
     enable_tls: bool = False,
     split_mode: bool = False,
-    kafka_channel: str = "4/edge/pr-595",
+    kafka_channel: str = "4/edge",
 ) -> Dict[str, Any]:
     """Get Terraform configuration based on deployment mode."""
     if split_mode:

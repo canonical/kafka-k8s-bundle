@@ -77,7 +77,7 @@ variable "broker" {
   description = "Defines the Apache Kafka broker application configuration"
   type = object({
     app_name    = optional(string, "kafka-broker")
-    channel     = optional(string, "4/edge/pr-595")
+    channel     = optional(string, "4/edge")
     config      = optional(map(string), {})
     constraints = optional(string, "arch=amd64")
     resources   = optional(map(string), {})
@@ -93,7 +93,7 @@ variable "controller" {
   description = "Defines the Apache Kafka KRaft controller application configuration"
   type = object({
     app_name    = optional(string, "kafka-controller")
-    channel     = optional(string, "4/edge/pr-595")
+    channel     = optional(string, "4/edge")
     config      = optional(map(string), {})
     constraints = optional(string, "arch=amd64")
     resources   = optional(map(string), {})
@@ -115,7 +115,7 @@ variable "connect" {
   description = "Defines the Kafka Connect application configuration"
   type = object({
     app_name    = optional(string, "kafka-connect")
-    channel     = optional(string, "4/edge/pr-595")
+    channel     = optional(string, "4/edge")
     config      = optional(map(string), {})
     constraints = optional(string, "arch=amd64")
     resources   = optional(map(string), {})

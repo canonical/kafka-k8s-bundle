@@ -7,11 +7,11 @@ on:
     inputs:
       kafka-channel:
         description: "Channel to use for the Kafka charm (broker and controller)"
-        default: "4/edge/pr-595"
+        default: "4/edge"
         required: false
         type: choice
         options:
-          - "4/edge/pr-595"
+          - "4/edge"
           - "4/beta"
           - "4/candidate"
           - "4/stable"
@@ -62,7 +62,7 @@ jobs:
     name: ${{ matrix.tox-environment }}_${{ matrix.kraft-mode }}_${{ matrix.juju.snap_channel }}
     needs:
       - lint
-    timeout-minutes: 240
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -90,10 +90,12 @@ jobs:
           fi
       - name: Run integration tests
         run: |
-          tox run -e ${{ matrix.tox-environment }} -- -m '${{ steps.select-tests.outputs.mark_expression }}' --model testing --keep-models --kraft-mode=${{ matrix.kraft-mode }} --kafka-channel=${{ inputs.kafka-channel || '4/edge/pr-595' }}
+          tox run -e ${{ matrix.tox-environment }} -- \
+            -m '${{ steps.select-tests.outputs.mark_expression }}' \
+            --model testing \
+            --keep-models \
+            --kraft-mode=${{ matrix.kraft-mode }} \
+            --kafka-channel=${{ inputs.kafka-channel || '4/edge' }}
       - name: juju debug-log
         timeout-minutes: 3
         run: juju debug-log --color --replay --no-tail
-      - name: Setup tmate session
-        uses: canonical/action-tmate@main
-        if: ${{ failure() }}
