@@ -208,8 +208,10 @@ class COSAssertions:
         "Active Controllers",
         "Total of Topics",
     )
-    ALERTS_COUNT_SINGLE = 25
-    ALERTS_COUNT_MULTI = 45
+    # kafka-k8s has 20 native alerts, kafka-connect-k8s has 3
+    # 2 alerts are automatically added, namely HostDown & HostMetricsMissing
+    ALERTS_COUNT_SINGLE = 27
+    ALERTS_COUNT_MULTI = 49
 
 
 class CosDeployer:
@@ -299,9 +301,12 @@ def deploy_core_apps(ingress: str | None = None) -> None:
     core_juju.offer(f"{CORE_MODEL_NAME}.{CERTIFICATES_APP_NAME}", endpoint="certificates")
 
     if ingress:
-        core_juju.offer(ingress)
-    else:
-        core_juju.offer(f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint="ingress")
+        return
+
+    core_juju.offer(f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint="ingress", name="ingress")
+    core_juju.offer(
+        f"{CORE_MODEL_NAME}.{TRAEFIK_APP_NAME}", endpoint="traefik-route", name="traefik-route"
+    )
 
 
 def get_terraform_config(
